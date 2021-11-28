@@ -1,0 +1,20 @@
+name: 'Upload image'
+description: 'Uploads an image and keeps an url to it.'
+inputs:
+  path:
+    description: 'Path to the image.'
+    required: true
+  uploadMethod:
+    description: 'Where to upload images.'
+    required: true
+    default: 
+  apiKey:
+    description: 'API if the upload method needs it.'
+    required: true
+    default: ''
+outputs:
+  url:
+    description: 'URL of the uploaded image'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
