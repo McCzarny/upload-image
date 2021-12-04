@@ -1,5 +1,8 @@
 name: 'Upload image'
 description: 'Uploads an image and keeps an url to it.'
+branding:
+  icon: 'upload'  
+  color: 'gray-dark'
 inputs:
   path:
     description: 'Path to the image.'
