@@ -1,4 +1,4 @@
-# (WIP) upload-image
+# upload-image action
 A github action to upload an image.
 
 ## Usage
