@@ -14,7 +14,7 @@ inputs:
     default: ''
 outputs:
   url:
-    description: 'URL of the uploaded image'
+    description: 'A URL of the uploaded image.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
