@@ -1,10 +1,10 @@
 {
   "name": "upload-image",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . --fix",
     "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare && npm run test"
@@ -16,7 +16,8 @@
   "keywords": [
     "GitHub",
     "Actions",
-    "JavaScript"
+    "JavaScript",
+    "Image"
   ],
   "author": "",
   "license": "MIT",
