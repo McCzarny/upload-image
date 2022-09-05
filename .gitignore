@@ -103,3 +103,6 @@ typings/
 
 # VSCode
 .vscode
+
+# Environment
+env.sh
