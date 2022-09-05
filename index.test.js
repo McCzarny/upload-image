@@ -5,14 +5,12 @@ const path = require('path');
 const assert = require('assert');
 
 test('upload an image', async () => {
-  console.log('API_KEY is' + process.env['API_KEY']);
   const url = await uploadImage(
       'test-resources/0.png',
       'imgbb',
       process.env['API_KEY'],
   );
   expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
-  console.log(url);
 });
 
 test('upload with a wrong API key, should return undefined', async () => {
@@ -28,29 +26,23 @@ test('upload with a wrong API key, should return undefined', async () => {
   );
 });
 
-test('upload with an unknown method, should return undefined', async () => {
-  const url = await uploadImage(
-      'test-resources/0.png',
-      'unknown method',
-      process.env['API_KEY'],
-  );
-
-  assert(
-      typeof url === 'undefined',
-      'An unknown method didn\'t generate an undefined value.',
-  );
+test('upload with an unknown method, should throw an exception', async () => {
+  await expect( () =>
+    uploadImage(
+        'test-resources/0.png',
+        'unknown method',
+        process.env['API_KEY'],
+    )).rejects.toThrow();
 });
 
-test('upload with an incorrect path, should return undefined', async () => {
-  const url = await uploadImage(
-      'incorrect-path',
-      'imgbb',
-      process.env['API_KEY']);
-
-  assert(
-      typeof url === 'undefined',
-      'An incorrect path didn\'t generate an undefined value.',
-  );
+test('upload with an incorrect path, should throw an exception', async () => {
+  await expect(
+      () =>
+        uploadImage(
+            'incorrect-path',
+            'imgbb',
+            process.env['API_KEY']),
+  ).rejects.toThrow();
 });
 
 // shows how the runner will run a javascript action with env / stdout protocol
@@ -62,7 +54,7 @@ test('upload an image using index.js', () => {
   setInput('apiKey', process.env['API_KEY']);
   const ip = path.join(__dirname, 'index.js');
   const result = cp.execSync(`node ${ip}`, {env: process.env}).toString();
-  console.log(result);
+  expect(result).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
 });
 
 test('upload using index.js with an invalid API key, expect a failure', () => {
