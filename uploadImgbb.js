@@ -4,6 +4,8 @@
  * @param {string} apiKey the API key to access imgbb.com
  */
 async function uploadFile(file, apiKey) {
+  const assert = require('assert');
+  assert(apiKey, 'apiKey is required');
   const axios = require('axios');
   const FormData = require('form-data');
   const data = new FormData();
