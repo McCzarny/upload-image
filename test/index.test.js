@@ -18,7 +18,7 @@ test('upload an image using index.js', () => {
   setInput('apiKey', process.env['API_KEY']);
   const ip = path.join(__dirname, '..', 'index.js');
   const result = cp.execSync(`node ${ip}`, {env: process.env}).toString();
-  expect(result).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
+  expect(result).toMatch(new RegExp('::set-output name=url::https:\\/\\/i.ibb.co\\/.*\\.png'));
 });
 
 test('upload using index.js with an invalid API key, expect a failure', () => {
@@ -47,7 +47,7 @@ test('upload multiple images using index.js', () => {
   setInput('apiKey', process.env['API_KEY']);
   const ip = path.join(__dirname, '..', 'index.js');
   const result = cp.execSync(`node ${ip}`, {env: process.env}).toString();
-  expect(result).toMatch(new RegExp('(https:\\/\\/i.ibb.co\\/.*\\.png\n?){3}'));
+  expect(result).toMatch(new RegExp('::set-output name=url::(https:\\/\\/i.ibb.co\\/.*\\.png(%0A)?){3}'));
 });
 test('upload multiple with index.js with a single invalid path, expect a failure', () => {
   const setInput = (name, value) =>

@@ -1,6 +1,6 @@
 {
   "name": "upload-image",
-  "version": "1.2.0-pre-release",
+  "version": "1.2.1-pre-release",
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
   "scripts": {
