@@ -1,16 +1,16 @@
 module.exports = {
-  'env': {
-    'browser': true,
-    'commonjs': true,
-    'es2021': true,
+  env: {
+    browser: true,
+    commonjs: true,
+    es2021: true,
   },
-  'extends': 'google',
-  'overrides': [
-  ],
-  'parserOptions': {
-    'ecmaVersion': 'latest',
+  extends: 'google',
+  overrides: [],
+  parserOptions: {
+    ecmaVersion: 'latest',
   },
-  'rules': {
+  rules: {
+    'max-len': ['error', { code: 120 }],
   },
-  'ignorePatterns': ['dist/*.js', '**/vendor/*.js'],
-};
+  ignorePatterns: ['dist/*.js', '**/vendor/*.js'],
+}

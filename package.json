@@ -1,6 +1,6 @@
 {
   "name": "upload-image",
-  "version": "1.1.0",
+  "version": "1.2.5",
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
   "homepage": "https://github.com/McCzarny/upload-image#readme",
   "dependencies": {
     "@actions/core": "^1.2.5",
+    "acorn": "^8.8.0",
     "axios": "^0.24.0",
     "jquery": "^3.6.0"
   },

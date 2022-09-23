@@ -2,9 +2,9 @@
  * A github action that uploads an image and stores its url.
  */
 
-const core = require('@actions/core');
-const uploadImage = require('./uploadImage');
-const assert = require('assert');
+const core = require('@actions/core')
+const uploadImage = require('./uploadImage')
+const assert = require('assert')
 
 /**
  * Runs the action to upload an image.
@@ -19,19 +19,35 @@ const assert = require('assert');
  */
 async function run() {
   try {
-    const path = core.getInput('path');
-    const uploadMethod = core.getInput('uploadMethod');
-    const apiKey = core.getInput('apiKey');
-    core.info(`Uploding an image ${path} to ${uploadMethod}...`);
+    const paths = core.getMultilineInput('path')
+    const uploadMethod = core.getInput('uploadMethod')
+    const apiKey = core.getInput('apiKey')
+    assert(paths.length > 0, 'Missing mandatory parameter "paths"')
 
-    const url = await uploadImage(path, uploadMethod, apiKey);
-    assert(url, 'There was an error uploading the image.');
-    core.info(url);
+    const results = new Map()
+    await Promise.all(
+      paths.map(async (pathToUpload) => {
+        core.info(`Uploding an image ${pathToUpload} to ${uploadMethod}...`)
 
-    core.setOutput('url', url);
+        const resultUrl = await uploadImage(pathToUpload, uploadMethod, apiKey)
+        assert(resultUrl, 'There was an error uploading the image.')
+        core.info('inner result:' + resultUrl)
+        results.set(pathToUpload, resultUrl)
+      }),
+    )
+
+    core.info('results: ' + [...results.entries()])
+    const url = paths
+      .map((pathToUpload) => {
+        return results.get(pathToUpload)
+      })
+      .join('\n')
+    core.info('final url:' + url)
+
+    core.setOutput('url', url)
   } catch (error) {
-    core.setFailed(error.message);
+    core.setFailed(error.message)
   }
 }
 
-run();
+run()
