@@ -41,7 +41,7 @@ Multiline example:
       uses: McCzarny/upload-image@v1.2.0
       if: github.event_name == 'pull_request'
       with:
-        path:|
+        path: |
           images/0.png
           images/1.png
           images/2.png
