@@ -331,10 +331,15 @@ module.exports = {
     meta: {
         type: "suggestion",
 
+        defaultOptions: [{
+            destructuring: "any",
+            ignoreReadBeforeAssign: false
+        }],
+
         docs: {
             description: "Require `const` declarations for variables that are never reassigned after declared",
             recommended: false,
-            url: "https://eslint.org/docs/rules/prefer-const"
+            url: "https://eslint.org/docs/latest/rules/prefer-const"
         },
 
         fixable: "code",
@@ -343,8 +348,8 @@ module.exports = {
             {
                 type: "object",
                 properties: {
-                    destructuring: { enum: ["any", "all"], default: "any" },
-                    ignoreReadBeforeAssign: { type: "boolean", default: false }
+                    destructuring: { enum: ["any", "all"] },
+                    ignoreReadBeforeAssign: { type: "boolean" }
                 },
                 additionalProperties: false
             }
@@ -355,10 +360,9 @@ module.exports = {
     },
 
     create(context) {
-        const options = context.options[0] || {};
-        const sourceCode = context.getSourceCode();
-        const shouldMatchAnyDestructuredVariable = options.destructuring !== "all";
-        const ignoreReadBeforeAssign = options.ignoreReadBeforeAssign === true;
+        const [{ destructuring, ignoreReadBeforeAssign }] = context.options;
+        const shouldMatchAnyDestructuredVariable = destructuring !== "all";
+        const sourceCode = context.sourceCode;
         const variables = [];
         let reportCount = 0;
         let checkedId = null;
@@ -493,7 +497,7 @@ module.exports = {
 
             VariableDeclaration(node) {
                 if (node.kind === "let" && !isInitOfForStatement(node)) {
-                    variables.push(...context.getDeclaredVariables(node));
+                    variables.push(...sourceCode.getDeclaredVariables(node));
                 }
             }
         };
