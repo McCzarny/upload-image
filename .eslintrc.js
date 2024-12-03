@@ -10,7 +10,7 @@ module.exports = {
     ecmaVersion: 'latest',
   },
   rules: {
-    'max-len': ['error', { code: 120 }],
+    'max-len': ['error', {code: 120}],
   },
   ignorePatterns: ['dist/*.js', '**/vendor/*.js'],
-}
+};
