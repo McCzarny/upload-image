@@ -42,7 +42,8 @@ async function uploadFile(file, apiKey, extraOptions) {
         if ('expiration' in extraOptions && response.data.data.expiration != extraOptions.expiration) {
           console.warn(
               'expiration is not the same. expected: ' + extraOptions.expiration +
-              ' actual: ' + response.data.data.expiration);
+              ' actual: ' + response.data.data.expiration +
+              '\n Could be caused by reupload of an existing image.');
         }
         console.log(JSON.stringify(response.data));
         return {url: response.data.data.url, expiration: response.data.data.expiration};

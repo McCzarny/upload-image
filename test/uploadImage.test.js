@@ -2,6 +2,8 @@ const uploadImage = require('../uploadImage');
 const process = require('process');
 const assert = require('assert');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Tests for uploadImage.
@@ -17,6 +19,8 @@ test('upload an image', async () => {
   );
   const url = result.url;
   expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
+  const expiration = result.expiration;
+  expect(expiration).toBe(0);
 });
 
 test('upload with a wrong API key, should return undefined', async () => {
@@ -50,29 +54,67 @@ test('upload with an incorrect path, should throw an exception', async () => {
   ).rejects.toThrow();
 });
 
-const LongTestTimeout = 60 * 1000 * 2;
-// Long test to for expiration option.
-// The minimum expiration time for imgbb is 1 minute.
-test('upload an image with expiration option,', async () => {
-  const expirationInSeconds = 60;
-  const result = await uploadImage(
-      'test-resources/0.png',
-      'imgbb',
-      process.env['API_KEY'],
-      {expiration: expirationInSeconds},
-  );
-  const url = result.url;
-  expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
+describe('Test expiration option', () => {
+  let uniqueImagePath;
 
-  // Verify  that the image is accessible.
-  const response = await fetch(url);
-  expect(response.status).toBe(200);
+  // Generates a random gif file to be sure that expiration option is set by test.
+  // If we try to reupload the same image to imgbb, it won't take into account
+  // the expiration option and return settings of the original upload.
+  // Check ./gif_data_description.txt to get more information about the gif format.
+  beforeEach(() => {
+    // Data before global color table.
+    const hexPrefix = "47494638396101000100800000";
+    // Data after global color table.
+    const hexSuffix = "21f90401000000002c000000000100010000020144003b";
+    // 6 bytes with global color table. We use it to generate an unique image.
+    const randomSixBytes = [...Array(6)]
+        .map(() => Math.floor(Math.random() * 256)
+          .toString(16)
+          .padStart(2, '0'))
+        .join('');
+    const imageData = Buffer.from(hexPrefix + randomSixBytes + hexSuffix, 'hex');
+    uniqueImagePath = path.join(__dirname, 'image.gif');
+    fs.writeFileSync(uniqueImagePath, imageData);
+  });
 
-  // Wait a little bit longer that the expiration time and verify that the image is not accessible.
-  await new Promise((resolve) => setTimeout(resolve, expirationInSeconds * 1000 * 1.5));
+  afterEach(() =>{
+    fs.unlinkSync(uniqueImagePath);
+  })
 
-  const response2 = await fetch(url);
-  // Log response.
-  console.log(response2);
-  expect(response2.status).toBe(404);
-}, LongTestTimeout);
+  const ExpirationInSeconds = 60;
+  const LongTestTimeout = ExpirationInSeconds * 1000 * 10;
+  // Long test to for expiration option.
+  // The minimum expiration time for imgbb is 1 minute.
+  test('upload an image with expiration option,', async () => {
+    const result = await uploadImage(
+        uniqueImagePath,
+        'imgbb',
+        process.env['API_KEY'],
+        {expiration: ExpirationInSeconds},
+    );
+    const url = result.url;
+    expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.gif'));
+    expect(result.expiration).toBe(ExpirationInSeconds);
+
+    // Verify  that the image is accessible.
+    const response = await fetch(url);
+    expect(response.status).toBe(200);
+      const startTime = Date.now();
+      // We cannot guarantee that the image will expire after given time, but
+      // we can at least verify that it expires after a reasonable amount of time.
+      const maxWaitTime = 9 * ExpirationInSeconds * 1000; // 9 * expiration time
+      let response2;
+
+      // Actively wait for the image to expire, checking every 10 seconds
+      while (true) {
+        response2 = await fetch(url);
+        if (response2.status === 404) {
+          break;
+        }
+        if (Date.now() - startTime > maxWaitTime) {
+          assert.fail('Image did not expire after 9 minutes');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 10 seconds
+      }
+  }, LongTestTimeout);
+});

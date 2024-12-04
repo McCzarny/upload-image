@@ -95,6 +95,8 @@ test('upload an image using index.js', () => {
 
   const url = getValueFromGithubOutput(githubOutputPath, 'url');
   expect(url).toMatch(/https:\/\/i\.ibb\.co\/.*\.png/);
+  const expiration = getValueFromGithubOutput(githubOutputPath, 'expiration');
+  expect(expiration.trim()).toBe('0');
 });
 
 test('upload using index.js with an invalid API key, expect a failure', () => {
@@ -134,6 +136,8 @@ test('upload multiple images using index.js', () => {
   expect(fileExists).toBe(true);
   const url = getValueFromGithubOutput(githubOutputPath, 'url');
   expect(url).toMatch(new RegExp('(https:\\/\\/i.ibb.co\\/.*\\.png(%0A)?){3}'));
+  const expiration = getValueFromGithubOutput(githubOutputPath, 'expiration');
+  expect(expiration).toMatch(new RegExp('(0(%0A)?){3}'));
 });
 
 test('upload multiple with index.js with a single invalid path, expect a failure', () => {
