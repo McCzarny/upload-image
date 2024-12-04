@@ -9,7 +9,6 @@ const assert = require('assert');
  */
 
 test('upload an image', async () => {
-  console.log(process.env);
   const url = await uploadImage(
       'test-resources/0.png',
       'imgbb',
