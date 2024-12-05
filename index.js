@@ -38,11 +38,12 @@ async function run() {
     );
 
     core.info('results: ' + [...results.entries()]);
-    const url = paths
-        .map((pathToUpload) => {
-          return results.get(pathToUpload)?.url;
-        })
-        .join('\n');
+    const urls = paths.map((pathToUpload) => {
+      return results.get(pathToUpload)?.url;
+    });
+    core.setOutput('urls', urls);
+
+    const url = urls.join('\n');
     core.info('final url:' + url);
 
     core.setOutput('url', url);
@@ -53,9 +54,6 @@ async function run() {
         })
         .join('\n');
     core.setOutput('expiration', expiration);
-
-    const urls = url.split('\n');
-    core.setOutput('urls', urls);
   } catch (error) {
     core.setFailed(error.message);
   }

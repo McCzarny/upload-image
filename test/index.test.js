@@ -37,7 +37,7 @@ function generateGithubOutputFile() {
 function getValueFromGithubOutput(githubOutputPath, key) {
   const content = fs.readFileSync(githubOutputPath, 'utf8');
   const lines = content.split('\n');
-  const keyLine = lines.find((line) => line.startsWith(key));
+  const keyLine = lines.find((line) => line.startsWith(key + '<<'));
   if (!keyLine) {
     return undefined;
   }
@@ -69,7 +69,7 @@ function getValueFromGithubOutput(githubOutputPath, key) {
 function getArrayFromGithubOutput(githubOutputPath, key) {
   const content = fs.readFileSync(githubOutputPath, 'utf8');
   const lines = content.split('\n');
-  const keyLine = lines.find((line) => line.startsWith(key));
+  const keyLine = lines.find((line) => line.startsWith(key + '<<'));
   if (!keyLine) {
     return [];
   }
@@ -126,7 +126,7 @@ test('upload an image using index.js', () => {
   const fileExists = fs.existsSync(githubOutputPath);
   expect(fileExists).toBe(true);
 
-  const url = getValueFromGithubOutput(githubOutputPath, 'url');
+  const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
   expect(url).toMatch(/https:\/\/i\.ibb\.co\/.*\.png/);
   const expiration = getValueFromGithubOutput(githubOutputPath, 'expiration').trim();
   expect(expiration.length).toBeGreaterThan(0);
@@ -134,6 +134,13 @@ test('upload an image using index.js', () => {
   expect(isNaN(expirationNumber)).toBeFalsy();
   expect(Number.isSafeInteger(expirationNumber)).toBeTruthy();
   expect(expirationNumber).toBeGreaterThanOrEqual(0);
+
+  const urls = getValueFromGithubOutput(githubOutputPath, 'urls');
+  expect(urls.length).toBeGreaterThan(0);
+  const urlsArray = JSON.parse(urls);
+  expect(Array.isArray(urlsArray)).toBeTruthy();
+  expect(urlsArray.length).toBe(1);
+  expect(urlsArray[0]).toBe(url);
 });
 
 test('upload using index.js with an invalid API key, expect a failure', () => {
@@ -182,6 +189,16 @@ test('upload multiple images using index.js', () => {
     expect(isNaN(expirationNumber)).toBeFalsy();
     expect(Number.isSafeInteger(expirationNumber)).toBeTruthy();
     expect(expirationNumber).toBeGreaterThanOrEqual(0);
+  }
+
+  const urls = getValueFromGithubOutput(githubOutputPath, 'urls');
+  expect(urls.length).toBeGreaterThan(0);
+  const urlsArray = JSON.parse(urls);
+  expect(Array.isArray(urlsArray)).toBeTruthy();
+  expect(urlsArray.length).toBe(3);
+  for (const uploadedUrl of urlsArray) {
+    expect(uploadedUrl.length).toBeGreaterThan(0);
+    expect(uploadedUrl).toMatch(/https:\/\/i\.ibb\.co\/.*\.png/);
   }
 });
 
