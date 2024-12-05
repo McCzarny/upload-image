@@ -29155,11 +29155,11 @@ module.exports = {
 
 const fs = __nccwpck_require__(9896);
 
-const uploadImage = async (imagePath, method, apiKey) => {
+const uploadImage = async (imagePath, method, apiKey, extraOptions = {}) => {
   const file = fs.readFileSync(imagePath);
   if (method === 'imgbb') {
-    const imgbb = __nccwpck_require__(1096);
-    return imgbb(file, apiKey);
+    const imgbbUploadImage = __nccwpck_require__(1096);
+    return imgbbUploadImage(file, apiKey, extraOptions);
   } else {
     throw new Error('Unsupported method ' + method + '.');
   }
@@ -29177,8 +29177,11 @@ module.exports = uploadImage;
  * Upload images to imgbb.
  * @param {string} file a path to the file to upload
  * @param {string} apiKey the API key to access imgbb.com
+ * @param {object} extraOptions dictionary with additional options that may be not supported
+ *                 by every upload method. imgbb supports name and expiration (in seconds 60-15552000)
+ * @see https://api.imgbb.com/ for information about API
  */
-async function uploadFile(file, apiKey) {
+async function uploadFile(file, apiKey, extraOptions) {
   const assert = __nccwpck_require__(2613);
   assert(apiKey, 'apiKey is required');
   const axios = __nccwpck_require__(7269);
@@ -29186,12 +29189,23 @@ async function uploadFile(file, apiKey) {
   const data = new FormData();
 
   const base64Image = file.toString('base64');
+  const params = {key: apiKey};
+
+  if ('name' in extraOptions) {
+    console.log('name: ' + extraOptions.name);
+    params.name = extraOptions.name;
+  }
+
+  if ('expiration' in extraOptions) {
+    params.expiration = extraOptions.expiration;
+  }
 
   data.append('image', base64Image);
 
   const config = {
     method: 'post',
-    url: 'https://api.imgbb.com/1/upload?key=' + apiKey,
+    url: 'https://api.imgbb.com/1/upload',
+    params: params,
     headers: {
       ...data.getHeaders(),
     },
@@ -29200,7 +29214,14 @@ async function uploadFile(file, apiKey) {
 
   return axios(config)
       .then(function(response) {
-        return response.data.data.url;
+        if ('expiration' in extraOptions && response.data.data.expiration != extraOptions.expiration) {
+          console.warn(
+              'expiration is not the same. expected: ' + extraOptions.expiration +
+              ' actual: ' + response.data.data.expiration +
+              '\n Could be caused by reupload of an existing image.');
+        }
+        console.log(JSON.stringify(response.data));
+        return {url: response.data.data.url, expiration: response.data.data.expiration};
       })
       .catch(function(error) {
         console.log(error);
@@ -35896,9 +35917,9 @@ var __webpack_exports__ = {};
  * A github action that uploads an image and stores its url.
  */
 
-const core = __nccwpck_require__(7484)
-const uploadImage = __nccwpck_require__(4570)
-const assert = __nccwpck_require__(2613)
+const core = __nccwpck_require__(7484);
+const uploadImage = __nccwpck_require__(4570);
+const assert = __nccwpck_require__(2613);
 
 /**
  * Runs the action to upload an image.
@@ -35908,43 +35929,52 @@ const assert = __nccwpck_require__(2613)
  *  apiKey - The API key if the upload method requires it.
  * Output:
  *  url - The url of the image or undefined if the upload failed.
+ *  expiration - The expiration of the image or undefined if the upload method does not support it or failed.
  *
  * most @actions toolkit packages have async methods
  */
 async function run() {
   try {
-    const paths = core.getMultilineInput('path')
-    const uploadMethod = core.getInput('uploadMethod')
-    const apiKey = core.getInput('apiKey')
-    assert(paths.length > 0, 'Missing mandatory parameter "paths"')
+    const paths = core.getMultilineInput('path');
+    const uploadMethod = core.getInput('uploadMethod');
+    const apiKey = core.getInput('apiKey');
+    assert(paths.length > 0, 'Missing mandatory parameter "paths"');
 
-    const results = new Map()
+    const results = new Map();
     await Promise.all(
-      paths.map(async (pathToUpload) => {
-        core.info(`Uploding an image ${pathToUpload} to ${uploadMethod}...`)
+        paths.map(async (pathToUpload) => {
+          core.info(`Uploding an image ${pathToUpload} to ${uploadMethod}...`);
 
-        const resultUrl = await uploadImage(pathToUpload, uploadMethod, apiKey)
-        assert(resultUrl, 'There was an error uploading the image.')
-        core.info('inner result:' + resultUrl)
-        results.set(pathToUpload, resultUrl)
-      }),
-    )
+          const result = await uploadImage(pathToUpload, uploadMethod, apiKey);
+          assert(result, 'There was an error uploading the image.');
+          core.info('inner result:' + result);
+          results.set(pathToUpload, result);
+        }),
+    );
 
-    core.info('results: ' + [...results.entries()])
-    const url = paths
-      .map((pathToUpload) => {
-        return results.get(pathToUpload)
-      })
-      .join('\n')
-    core.info('final url:' + url)
+    core.info('results: ' + [...results.entries()]);
+    const urls = paths.map((pathToUpload) => {
+      return results.get(pathToUpload)?.url;
+    });
+    core.setOutput('urls', urls);
 
-    core.setOutput('url', url)
+    const url = urls.join('\n');
+    core.info('final url:' + url);
+
+    core.setOutput('url', url);
+
+    const expiration = paths
+        .map((pathToUpload) => {
+          return results.get(pathToUpload)?.expiration;
+        })
+        .join('\n');
+    core.setOutput('expiration', expiration);
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 
-run()
+run();
 
 module.exports = __webpack_exports__;
 /******/ })()
