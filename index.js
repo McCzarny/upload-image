@@ -53,6 +53,9 @@ async function run() {
         })
         .join('\n');
     core.setOutput('expiration', expiration);
+
+    const urls = url.split('\n');
+    core.setOutput('urls', urls);
   } catch (error) {
     core.setFailed(error.message);
   }
