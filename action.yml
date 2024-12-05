@@ -24,5 +24,5 @@ outputs:
   expiration:
     description: 'When the image expires in seconds. If multiple images are uploaded, each expiration is returned in a new line.'
 runs:
-  using: 'node22'
+  using: 'node20'
   main: 'dist/index.js'
