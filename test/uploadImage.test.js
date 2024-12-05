@@ -1,3 +1,4 @@
+require('dotenv').config();
 const uploadImage = require('../uploadImage');
 const process = require('process');
 const assert = require('assert');
