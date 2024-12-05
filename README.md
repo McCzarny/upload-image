@@ -67,7 +67,6 @@ Multiline example:
 ```
 Upload an image with expiration:
 ```
-  ```
     - name: Upload image for 10 minutes
       id: upload-image-0
       uses: McCzarny/upload-image@v1.3.0
