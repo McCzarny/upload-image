@@ -32,7 +32,7 @@ function generateGithubOutputFile() {
  * ghadelimiter_UUID
  * @param {string} githubOutputPath The path to the github output file.
  * @param {string} key The key to get the value from.
- * @return {string} The value of the key or unndefined if the key doesn't exist.
+ * @return {string|undefined} The value of the key or undefined if the key doesn't exist.
  */
 function getValueFromGithubOutput(githubOutputPath, key) {
   const content = fs.readFileSync(githubOutputPath, 'utf8');
