@@ -107,3 +107,6 @@ env.sh
 
 # Environment
 env.sh
+
+# Node modules
+node_modules/
