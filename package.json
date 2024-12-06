@@ -19,6 +19,9 @@
     "JavaScript",
     "Image"
   ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "author": "",
   "license": "MIT",
   "bugs": {
