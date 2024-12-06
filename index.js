@@ -32,19 +32,17 @@ async function run() {
 
           const result = await uploadImage(pathToUpload, uploadMethod, apiKey);
           assert(result, 'There was an error uploading the image.');
-          core.info('inner result:' + result);
+          core.info(`Image uploaded to ${result.url} with expiration ${result.expiration}`);
           results.set(pathToUpload, result);
         }),
     );
 
-    core.info('results: ' + [...results.entries()]);
     const url = paths
         .map((pathToUpload) => {
           return results.get(pathToUpload)?.url;
         })
         .join('\n');
-    core.info('final url:' + url);
-
+    core.debug(`Setting output url to: ${url}`);
     core.setOutput('url', url);
 
     const expiration = paths
@@ -52,6 +50,7 @@ async function run() {
           return results.get(pathToUpload)?.expiration;
         })
         .join('\n');
+    core.debug(`Setting output expiration to: ${expiration}`);
     core.setOutput('expiration', expiration);
   } catch (error) {
     core.setFailed(error.message);
