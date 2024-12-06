@@ -52,7 +52,7 @@ export default [
     },
     {
         ignores: [
-            'dist/*.js',
+            'dist/**/*',
             '**/vendor/*.js',
             'node_modules/**/*',
         ],

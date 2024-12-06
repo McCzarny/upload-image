@@ -3,7 +3,6 @@
   "version": "1.3.0",
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix",

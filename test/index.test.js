@@ -152,7 +152,7 @@ test('upload using index.js with an invalid API key, expect a failure', () => {
   let exceptionThrown = false;
   try {
     cp.execSync(`node ${ip}`, {env: process.env}).toString();
-  } catch (error) {
+  } catch {
     exceptionThrown = true;
   }
 
@@ -211,7 +211,7 @@ test('upload multiple with index.js with a single invalid path, expect a failure
   let exceptionThrown = false;
   try {
     cp.execSync(`node ${ip}`, {env: process.env}).toString();
-  } catch (error) {
+  } catch {
     exceptionThrown = true;
   }
 
