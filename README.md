@@ -81,7 +81,35 @@ Upload an image with expiration:
         apiKey: '${{ secrets.IMGBB_API_KEY }}'
 ```
 
-Link to the workflow file:
+Using urls array (pass output to `fromJson()` method):
+```
+    - name: Upload images
+    id: upload_image
+    uses: McCzarny/upload-image@v1.3.0
+      if: github.event_name == 'pull_request'
+      with:
+        path: |
+          images/0.png
+          images/1.png
+          images/2.png
+          images/3.png
+          images/4.png
+        uploadMethod: imgbb
+        apiKey: '${{ secrets.IMGBB_API_KEY }}'
+    - name: 'Comment PR'
+      uses: actions/github-script@v7.0.1
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: 'Images:\n![0](${{fromJson(steps.upload_image.outputs.urls)[0]}})![1](${{fromJson(steps.upload_image.outputs.urls)[1]}})![2](${{fromJson(steps.upload_image.outputs.urls)[2]}})![3](${{fromJson(steps.upload_image.outputs.urls)[3]}})![4](${{fromJson(steps.upload_image.outputs.urls)[4]}})'
+            });
+```
+
+Link to the example workflow file:
 https://github.com/McCzarny/crypto-mongrels/blob/master/.github/workflows/generate_mongrel.yml
 
 ## Supported upload methods
