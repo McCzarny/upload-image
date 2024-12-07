@@ -20,6 +20,8 @@ A github action to upload an image.
 
 `url` The action returns a URL of the uploaded image as `url` or multiple lines with URLs if more than one path was provided.
 
+`urls` The resulting list of URLs of the uploaded images as an array.
+
 `expiration` The expiration time of the image in seconds if the upload method supports it. 0 if there is no expiration.
 
 ## Examples:

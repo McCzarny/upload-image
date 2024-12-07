@@ -4,7 +4,8 @@
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint . --fix",
+    "lint": "eslint . ",
+    "lint:fix": "eslint . --fix",
     "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare && npm run test"
@@ -37,8 +38,11 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.3",
+    "dotenv": "^16.4.7",
     "eslint": "^9.16.0",
     "eslint-config-google": "^0.14.0",
+    "eslint-plugin-jest": "^28.9.0",
+    "globals": "^15.13.0",
     "jest": "^29.7.0",
     "node-fetch": "^2.7.0"
   }

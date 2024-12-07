@@ -35952,12 +35952,13 @@ async function run() {
         }),
     );
 
-    const url = paths
-        .map((pathToUpload) => {
-          return results.get(pathToUpload)?.url;
-        })
-        .join('\n');
-    core.debug(`Setting output url to: ${url}`);
+    const urls = paths.map((pathToUpload) => {
+      return results.get(pathToUpload)?.url;
+    });
+    core.setOutput('urls', urls);
+
+    const url = urls.join('\n');
+	core.debug(`Setting output url to: ${url}`);
     core.setOutput('url', url);
 
     const expiration = paths

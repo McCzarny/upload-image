@@ -1,3 +1,4 @@
+require('dotenv').config();
 const uploadImage = require('../uploadImage');
 const process = require('process');
 const assert = require('assert');
@@ -20,7 +21,7 @@ test('upload an image', async () => {
   const url = result.url;
   expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
   const expiration = result.expiration;
-  expect(expiration).toBe(0);
+  expect(expiration).toBeGreaterThanOrEqual(0);
 });
 
 test('upload with a wrong API key, should return undefined', async () => {

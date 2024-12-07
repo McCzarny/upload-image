@@ -110,3 +110,6 @@ node_modules/
 
 # Environment
 env.sh
+
+# Node modules
+node_modules/
