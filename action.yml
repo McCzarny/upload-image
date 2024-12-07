@@ -21,6 +21,8 @@ inputs:
 outputs:
   url:
     description: 'A URL of the uploaded image. If multiple images are uploaded, each URL is returned in a new line.'
+  urls:
+    description: 'Same as url, but as an array of URLs of the uploaded images.'
   expiration:
     description: 'When the image expires in seconds. If multiple images are uploaded, each expiration is returned in a new line.'
 runs:
