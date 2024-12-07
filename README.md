@@ -29,7 +29,7 @@ Upload an image and comment it in the PR:
 ```
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.0.0
+      uses: McCzarny/upload-image@v1.3.0
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
@@ -49,7 +49,7 @@ Multiline example:
 ```
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.2.0
+      uses: McCzarny/upload-image@v1.3.0
       if: github.event_name == 'pull_request'
       with:
         path: |
@@ -67,6 +67,7 @@ Multiline example:
           const { issue: { number: issue_number }, repo: { owner, repo }  } = context;
           github.issues.createComment({ issue_number, owner, repo, body: 'Uploaded images:\n${{steps.upload-image-0.outputs.url}}'});
 ```
+
 Upload an image with expiration:
 ```
     - name: Upload image for 10 minutes
@@ -87,4 +88,5 @@ https://github.com/McCzarny/crypto-mongrels/blob/master/.github/workflows/genera
 
 ### IMGBB
 Please visit https://api.imgbb.com/ to get Your API key and pass it to the action.
+
 This method supports `expiration` option in seconds 60-15552000. By default, there is no expiration.
