@@ -26,7 +26,7 @@ export default [
     {
         // Settings for config files
         files: [
-            "eslint.config.js",
+            "eslint.config.mjs",
         ],
         languageOptions: {
             ecmaVersion: "latest",

@@ -115,7 +115,7 @@ test('upload an image using index.js', () => {
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
   try {
-    const childProcess = cp.execSync(`node ${ip}`, {env: process.env});
+    const childProcess = cp.execFileSync('node', [ip], {env: process.env});
     console.log(childProcess.toString());
   } catch (error) {
     console.log(error);
@@ -151,7 +151,7 @@ test('upload using index.js with an invalid API key, expect a failure', () => {
 
   let exceptionThrown = false;
   try {
-    cp.execSync(`node ${ip}`, {env: process.env}).toString();
+    cp.execFileSync('node', [ip], {env: process.env}).toString();
   } catch {
     exceptionThrown = true;
   }
@@ -167,7 +167,7 @@ test('upload multiple images using index.js', () => {
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
 
   try {
-    const childProcess = cp.execSync(`node ${ip}`, {env: process.env});
+    const childProcess = cp.execFileSync('node', [ip],  {env: process.env});
     console.log(childProcess.toString());
   } catch (error) {
     console.log(error);
@@ -210,7 +210,7 @@ test('upload multiple with index.js with a single invalid path, expect a failure
 
   let exceptionThrown = false;
   try {
-    cp.execSync(`node ${ip}`, {env: process.env}).toString();
+    cp.execFileSync('node', [ip], {env: process.env}).toString();
   } catch {
     exceptionThrown = true;
   }
