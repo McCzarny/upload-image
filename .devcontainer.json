@@ -12,12 +12,11 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "ms-vscode.vscode-typescript-next"
-      ]
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
     }
-  },
-  "postCreateCommand": "npm install",
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash"
   },
   "remoteUser": "node"
 }
