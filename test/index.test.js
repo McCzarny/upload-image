@@ -109,6 +109,10 @@ afterEach(() => {
 
 // shows how the runner will run a javascript action with env / stdout protocol
 test('upload an image using index.js', () => {
+  if (!process.env['API_KEY']) {
+    console.log('Skipping test: API_KEY is not defined');
+    return;
+  }
   setInput('path', 'test-resources/0.png');
   setInput('uploadMethod', 'imgbb');
   setInput('apiKey', process.env['API_KEY']);
@@ -160,6 +164,10 @@ test('upload using index.js with an invalid API key, expect a failure', () => {
 });
 
 test('upload multiple images using index.js', () => {
+  if (!process.env['API_KEY']) {
+    console.log('Skipping test: API_KEY is not defined');
+    return;
+  }
   setInput('path', 'test-resources/0.png\ntest-resources/1.png\ntest-resources/2.png');
   setInput('uploadMethod', 'imgbb');
   setInput('apiKey', process.env['API_KEY']);

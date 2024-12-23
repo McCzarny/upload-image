@@ -8,7 +8,7 @@
  */
 async function uploadFile(file, apiKey, extraOptions) {
   const assert = require('assert');
-  assert(apiKey, 'apiKey is required');
+  assert(typeof apiKey === 'string' && apiKey.trim().length > 0, 'apiKey must be a non-empty string');
   const axios = require('axios');
   const FormData = require('form-data');
   const data = new FormData();
