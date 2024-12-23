@@ -8,17 +8,16 @@ const path = require('path');
 
 const apiKey = process.env['API_KEY'];
 
+const testIf = (condition, ...args) =>
+  condition ? test(...args) : test.skip(...args);
+
 /**
  * Tests for uploadImage.
  *
  * @group unit/uploadimage
  */
 
-test('upload an image', async () => {
-  if (!apiKey) {
-    console.warn('API_KEY is not defined. Skipping test.');
-    return;
-  }
+testIf(apiKey, 'upload an image', async () => {
   const result = await uploadImage(
       'test-resources/0.png',
       'imgbb',
@@ -42,11 +41,7 @@ test('upload with a wrong API key, should return undefined', async () => {
   );
 });
 
-test('upload with an unknown method, should throw an exception', async () => {
-  if (!apiKey) {
-    console.warn('API_KEY is not defined. Skipping test.');
-    return;
-  }
+testIf(apiKey, 'upload with an unknown method, should throw an exception', async () => {
   await expect( () =>
     uploadImage(
         'test-resources/0.png',
@@ -55,11 +50,7 @@ test('upload with an unknown method, should throw an exception', async () => {
     )).rejects.toThrow();
 });
 
-test('upload with an incorrect path, should throw an exception', async () => {
-  if (!apiKey) {
-    console.warn('API_KEY is not defined. Skipping test.');
-    return;
-  }
+testIf(apiKey, 'upload with an incorrect path, should throw an exception', async () => {
   await expect(
       () =>
         uploadImage(
@@ -100,11 +91,7 @@ describe('Test expiration option', () => {
   const LongTestTimeout = ExpirationInSeconds * 1000 * 10;
   // Long test to for expiration option.
   // The minimum expiration time for imgbb is 1 minute.
-  test('upload an image with expiration option,', async () => {
-    if (!apiKey) {
-      console.warn('API_KEY is not defined. Skipping test.');
-      return;
-    }
+  testIf(apiKey, 'upload an image with expiration option,', async () => {
     const result = await uploadImage(
         uniqueImagePath,
         'imgbb',
