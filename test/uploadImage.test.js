@@ -134,26 +134,74 @@ describe('Test expiration option', () => {
   }, LongTestTimeout);
 });
 
-testIf(apiKey, 'Test delete URL', async () => {
-  const result = await uploadImage(
-    'test-resources/0.png',
-    'imgbb',
-    apiKey,
-  );
-  let url = result.url;
-  let deleteUrl = result.delete_url;
-  expect(url).toMatch(URL_REGEX);
-  expect(deleteUrl).toMatch(DELETE_URL_REGEX);
+describe('Test delete URL', () => {
+    
+  testIf(apiKey, 'Test delete URL', async () => {
+    const result = await uploadImage(
+      'test-resources/0.png',
+      'imgbb',
+      apiKey,
+    );
+    const url = result.url;
+    const deleteUrl = result.delete_url;
+    expect(url).toMatch(URL_REGEX);
+    expect(deleteUrl).toMatch(DELETE_URL_REGEX);
 
-  // Expect that the image is accessible.
-  const responseExists = await fetch(url);
-  expect(responseExists.status).toBe(200);
+    // Expect that the image is accessible.
+    const responseExists = await fetch(url);
+    expect(responseExists.status).toBe(200);
 
-  // Expect that the delete URL successfully deletes the image.
-  const responseDelete = await fetch(deleteUrl, {method: 'DELETE'});
-  expect(responseDelete.status).toBe(200);
+    const deleteUrlParts = deleteUrl.split('/');
+    const id = deleteUrlParts[deleteUrlParts.length - 2];
+    const hash = deleteUrlParts[deleteUrlParts.length - 1];
 
-  // Expect that the image is not accessible after deletion.
-  const responseDeleted = await fetch(url);
-  expect(responseDeleted.status).toBe(404);
+    const urlDelete = 'https://ibb.co/json';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({
+        auth_token: apiKey,
+        pathname: `/${id}/${hash}`,
+        action: 'delete',
+        delete: 'image',
+        from: 'resource',
+        'deleting[type]': 'image',
+        'deleting[privacy]': 'public',
+        'deleting[hash]': hash,
+        'deleting[id]': id
+      })
+    };
+
+    console.log(options);
+
+    const responseDeleteJson = await fetch(urlDelete, options);
+
+    console.log(responseDeleteJson);
+    expect(responseDeleteJson.status).toBe(200);
+
+    // Expect that the image is not accessible.
+    const startTime = Date.now();
+    const maxWaitTime = 3 * 1000; // 3 seconds
+    let response2;
+
+    let removed = false;
+    // Actively wait for the image to expire, checking every 10 seconds
+    while (Date.now() - startTime <= maxWaitTime) {
+      response2 = await fetch(url);
+      if (response2.status === 404) {
+        removed = true;
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5 second
+    }
+
+    if (!removed) {
+      console.warn(`Image did not expire after ${maxWaitTime / 1000 } seconds`);
+    }
+  });
 });

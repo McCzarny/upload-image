@@ -230,7 +230,7 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
 
   // delete_url
   const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url');
-  expect(delete_url).toMatch(new RegExp('(https:\\/\\/i.ibb.co\\/delete\\/.*\\.png(%0A)?){3}'));
+  expect(delete_url).toMatch(new RegExp('(https:\\/\\/ibb.co\\/.*(%0A)?){3}'));
 
   // delete_urls
   const delete_urls = getValueFromGithubOutput(githubOutputPath, 'delete_urls');
