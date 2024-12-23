@@ -5,6 +5,10 @@ const path = require('path');
 const assert = require('assert');
 const fs = require('fs');
 
+const apiKey = process.env['API_KEY'];
+
+const testIf = (condition, ...args) =>
+  condition ? test(...args) : test.skip(...args);
 
 const setInput = (name, value) =>
   (process.env[`INPUT_${name.replace(/ /g, '_').toUpperCase()}`] = value);
@@ -108,10 +112,10 @@ afterEach(() => {
  */
 
 // shows how the runner will run a javascript action with env / stdout protocol
-test('upload an image using index.js', () => {
+testIf(apiKey, 'upload an image using index.js', () => {
   setInput('path', 'test-resources/0.png');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', process.env['API_KEY']);
+  setInput('apiKey', apiKey);
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
   try {
@@ -159,10 +163,10 @@ test('upload using index.js with an invalid API key, expect a failure', () => {
   assert(exceptionThrown, 'An invalid API key didn\'t throw an exception.');
 });
 
-test('upload multiple images using index.js', () => {
+testIf(apiKey, 'upload multiple images using index.js', () => {
   setInput('path', 'test-resources/0.png\ntest-resources/1.png\ntest-resources/2.png');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', process.env['API_KEY']);
+  setInput('apiKey', apiKey);
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
 
@@ -202,10 +206,10 @@ test('upload multiple images using index.js', () => {
   }
 });
 
-test('upload multiple with index.js with a single invalid path, expect a failure', () => {
+testIf(apiKey, 'upload multiple with index.js with a single invalid path, expect a failure', () => {
   setInput('path', 'test-resources/0.png\ntest-resources/1.png\ntest-resources/INVALID');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', process.env['API_KEY']);
+  setInput('apiKey', apiKey);
   const ip = path.join(__dirname, '..', 'index.js');
 
   let exceptionThrown = false;
