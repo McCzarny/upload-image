@@ -46,7 +46,11 @@ async function uploadFile(file, apiKey, extraOptions) {
               '\n Could be caused by reupload of an existing image.');
         }
         console.log(JSON.stringify(response.data));
-        return {url: response.data.data.url, expiration: response.data.data.expiration};
+        return {
+          url: response.data.data.url,
+          expiration: response.data.data.expiration,
+          delete_url: response.data.data.delete_url,
+        };
       })
       .catch(function(error) {
         console.log(error);
