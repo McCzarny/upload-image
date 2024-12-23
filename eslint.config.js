@@ -1,8 +1,8 @@
-import js from "@eslint/js";
-import globals from "globals";
-import pluginJest from 'eslint-plugin-jest';
+const js = require("@eslint/js");
+const globals = require("globals");
+const pluginJest = require('eslint-plugin-jest');
 
-export default [
+module.exports = [
     js.configs.recommended, // Recommended config applied to all files
     {
         //Default settings for all files, we use it for source files.
@@ -30,7 +30,7 @@ export default [
         ],
         languageOptions: {
             ecmaVersion: "latest",
-            sourceType: "module",
+            sourceType: "script", // Changed from "module" to "script"
         },
     },
     {
@@ -43,7 +43,7 @@ export default [
         },
         languageOptions: {
             ecmaVersion: "latest",
-            sourceType: "module",
+            sourceType: "script", // Changed from "module" to "script"
             globals: {
                 ...globals.node,
                 ...pluginJest.environments.globals.globals,

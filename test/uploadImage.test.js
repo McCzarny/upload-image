@@ -1,8 +1,6 @@
 require('dotenv').config();
 const uploadImage = require('../uploadImage');
-const process = require('process');
 const assert = require('assert');
-const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
@@ -111,19 +109,20 @@ describe('Test expiration option', () => {
       const maxWaitTime = 9 * ExpirationInSeconds * 1000; // 9 * expiration time
       let response2;
 
+      let removed = false;
       // Actively wait for the image to expire, checking every 10 seconds
-      while (true) {
+      while (Date.now() - startTime <= maxWaitTime) {
         response2 = await fetch(url);
         if (response2.status === 404) {
+          removed = true;
           break;
         }
-        if (Date.now() - startTime > maxWaitTime) {
-          // Unfortunately, the test is not reliable enough to keep the failure :(
-          // assert.fail('Image did not expire after 9 minutes');
-          console.warn('Image did not expire after 9 minutes');
-          break;
-        }
+
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 10 seconds
+      }
+
+      if (!removed) {
+        console.warn(`Image did not expire after ${maxWaitTime / (1000 * 60) } minutes`);
       }
   }, LongTestTimeout);
 });
