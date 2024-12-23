@@ -89,7 +89,11 @@ describe('Test expiration option', () => {
   });
 
   afterEach(() =>{
-    fs.unlinkSync(uniqueImagePath);
+    try {
+      fs.unlinkSync(uniqueImagePath);
+    } catch (error) {
+      console.log(error);
+    }
   })
 
   const ExpirationInSeconds = 60;
@@ -135,7 +139,7 @@ describe('Test expiration option', () => {
 });
 
 describe('Test delete URL', () => {
-    
+  const DELETE_IMAGE_TEST_TIMEOUT = 5 * 60 * 1000; // 5 minutes
   testIf(apiKey, 'Test delete URL', async () => {
     const result = await uploadImage(
       'test-resources/0.png',
@@ -175,9 +179,6 @@ describe('Test delete URL', () => {
         'deleting[id]': id
       })
     };
-
-    console.log(options);
-
     const responseDeleteJson = await fetch(urlDelete, options);
 
     console.log(responseDeleteJson);
@@ -185,23 +186,25 @@ describe('Test delete URL', () => {
 
     // Expect that the image is not accessible.
     const startTime = Date.now();
-    const maxWaitTime = 3 * 1000; // 3 seconds
-    let response2;
+    const maxWaitTime = 60 * 1000; // 60 seconds
+    let responseAfterDelete;
 
     let removed = false;
     // Actively wait for the image to expire, checking every 10 seconds
     while (Date.now() - startTime <= maxWaitTime) {
-      response2 = await fetch(url);
-      if (response2.status === 404) {
+      responseAfterDelete = await fetch(url);
+      if (responseAfterDelete.status === 404) {
         removed = true;
         break;
       }
+      console.log(`The image is still accessible after ${Date.now() - startTime} milliseconds. ` 
+        + `Status : ${responseAfterDelete.status}`);
 
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5 second
+      await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 5 second
     }
 
     if (!removed) {
       console.warn(`Image did not expire after ${maxWaitTime / 1000 } seconds`);
     }
-  });
+  }, DELETE_IMAGE_TEST_TIMEOUT);
 });

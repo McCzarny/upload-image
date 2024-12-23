@@ -45,7 +45,7 @@ async function run() {
     core.setOutput('urls', urls);
 
     const url = urls.join('\n');
-	  core.debug(`Setting output url to: ${url}`);
+    core.debug(`Setting output url to: ${url}`);
     core.setOutput('url', url);
 
     // Setting outputs related to expiration
