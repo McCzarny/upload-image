@@ -104,6 +104,9 @@ afterEach(() => {
   fs.unlinkSync(githubOutputPath);
 });
 
+const URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
+const DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
+
 /**
  * Tests for index.js.
  *
@@ -129,8 +132,11 @@ testIf(apiKey, 'upload an image using index.js', () => {
   const fileExists = fs.existsSync(githubOutputPath);
   expect(fileExists).toBe(true);
 
+  // url
   const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
-  expect(url).toMatch(/https:\/\/i\.ibb\.co\/.*\.png/);
+  expect(url).toMatch(URL_REGEX);
+  
+  // expiration
   const expiration = getValueFromGithubOutput(githubOutputPath, 'expiration').trim();
   expect(expiration.length).toBeGreaterThan(0);
   const expirationNumber = parseFloat(expiration);
@@ -138,12 +144,25 @@ testIf(apiKey, 'upload an image using index.js', () => {
   expect(Number.isSafeInteger(expirationNumber)).toBeTruthy();
   expect(expirationNumber).toBeGreaterThanOrEqual(0);
 
+  // urls
   const urls = getValueFromGithubOutput(githubOutputPath, 'urls');
   expect(urls.length).toBeGreaterThan(0);
   const urlsArray = JSON.parse(urls);
   expect(Array.isArray(urlsArray)).toBeTruthy();
   expect(urlsArray.length).toBe(1);
   expect(urlsArray[0]).toBe(url);
+
+  // delete_url
+  const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url').trim();
+  expect(delete_url).toMatch(DELETE_URL_REGEX);
+
+  // delete_urls
+  const delete_urls = getValueFromGithubOutput(githubOutputPath, 'delete_urls');
+  expect(delete_urls.length).toBeGreaterThan(0);
+  const delete_urlsArray = JSON.parse(delete_urls);
+  expect(Array.isArray(delete_urlsArray)).toBeTruthy();
+  expect(delete_urlsArray.length).toBe(1);
+  expect(delete_urlsArray[0]).toBe(delete_url);
 });
 
 test('upload using index.js with an invalid API key, expect a failure', () => {
@@ -181,8 +200,12 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
   // Expect that GITHUB_OUTPUT contains the url of the uploaded image
   const fileExists = fs.existsSync(githubOutputPath);
   expect(fileExists).toBe(true);
+  
+  // url
   const url = getValueFromGithubOutput(githubOutputPath, 'url');
   expect(url).toMatch(new RegExp('(https:\\/\\/i.ibb.co\\/.*\\.png(%0A)?){3}'));
+  
+  // expiration
   const expirations = getArrayFromGithubOutput(githubOutputPath, 'expiration');
   expect(Array.isArray(expirations)).toBeTruthy();
   expect(expirations.length).toBe(3);
@@ -194,6 +217,7 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
     expect(expirationNumber).toBeGreaterThanOrEqual(0);
   }
 
+  // urls
   const urls = getValueFromGithubOutput(githubOutputPath, 'urls');
   expect(urls.length).toBeGreaterThan(0);
   const urlsArray = JSON.parse(urls);
@@ -201,7 +225,22 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
   expect(urlsArray.length).toBe(3);
   for (const uploadedUrl of urlsArray) {
     expect(uploadedUrl.length).toBeGreaterThan(0);
-    expect(uploadedUrl).toMatch(/https:\/\/i\.ibb\.co\/.*\.png/);
+    expect(uploadedUrl).toMatch(URL_REGEX);
+  }
+
+  // delete_url
+  const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url');
+  expect(delete_url).toMatch(new RegExp('(https:\\/\\/i.ibb.co\\/delete\\/.*\\.png(%0A)?){3}'));
+
+  // delete_urls
+  const delete_urls = getValueFromGithubOutput(githubOutputPath, 'delete_urls');
+  expect(delete_urls.length).toBeGreaterThan(0);
+  const delete_urlsArray = JSON.parse(delete_urls);
+  expect(Array.isArray(delete_urlsArray)).toBeTruthy();
+  expect(delete_urlsArray.length).toBe(3);
+  for (const deleteUrl of delete_urlsArray) {
+    expect(deleteUrl.length).toBeGreaterThan(0);
+    expect(deleteUrl).toMatch(DELETE_URL_REGEX);
   }
 });
 

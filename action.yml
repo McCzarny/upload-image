@@ -25,6 +25,10 @@ outputs:
     description: 'Same as url, but as an array of URLs of the uploaded images.'
   expiration:
     description: 'When the image expires in seconds. If multiple images are uploaded, each expiration is returned in a new line.'
+  delete_url:
+    description: 'A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
+  delete_urls:
+    description: 'Same as delete_url, but as an array of URLs to delete the images
 runs:
   using: 'node20'
   main: 'dist/index.js'

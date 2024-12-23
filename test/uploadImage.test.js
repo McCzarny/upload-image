@@ -9,6 +9,9 @@ const apiKey = process.env['API_KEY'];
 const testIf = (condition, ...args) =>
   condition ? test(...args) : test.skip(...args);
 
+const URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
+const DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
+
 /**
  * Tests for uploadImage.
  *
@@ -22,9 +25,13 @@ testIf(apiKey, 'upload an image', async () => {
       apiKey,
   );
   const url = result.url;
-  expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
+  expect(url).toMatch(URL_REGEX);
+  
   const expiration = result.expiration;
   expect(expiration).toBeGreaterThanOrEqual(0);
+
+  const delete_url = result.delete_url;
+  expect(delete_url).toMatch(DELETE_URL_REGEX);
 });
 
 test('upload with a wrong API key, should return undefined', async () => {
@@ -125,4 +132,28 @@ describe('Test expiration option', () => {
         console.warn(`Image did not expire after ${maxWaitTime / (1000 * 60) } minutes`);
       }
   }, LongTestTimeout);
+});
+
+testIf(apiKey, 'Test delete URL', async () => {
+  const result = await uploadImage(
+    'test-resources/0.png',
+    'imgbb',
+    apiKey,
+  );
+  let url = result.url;
+  let deleteUrl = result.delete_url;
+  expect(url).toMatch(URL_REGEX);
+  expect(deleteUrl).toMatch(DELETE_URL_REGEX);
+
+  // Expect that the image is accessible.
+  const responseExists = await fetch(url);
+  expect(responseExists.status).toBe(200);
+
+  // Expect that the delete URL successfully deletes the image.
+  const responseDelete = await fetch(deleteUrl, {method: 'DELETE'});
+  expect(responseDelete.status).toBe(200);
+
+  // Expect that the image is not accessible after deletion.
+  const responseDeleted = await fetch(url);
+  expect(responseDeleted.status).toBe(404);
 });
