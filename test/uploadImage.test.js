@@ -139,13 +139,15 @@ describe('Test expiration option', () => {
 });
 
 describe('Test delete URL', () => {
-  const DELETE_IMAGE_TEST_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  const DELETE_IMAGE_MAX_WAIT_TIME = 3 * 60 * 1000; // 3 minutes
+  const DELETE_IMAGE_TEST_TIMEOUT = DELETE_IMAGE_MAX_WAIT_TIME * 2;
   testIf(apiKey, 'Test delete URL', async () => {
     const result = await uploadImage(
       'test-resources/0.png',
       'imgbb',
       apiKey,
     );
+    assert(result, 'Image upload failed');
     const url = result.url;
     const deleteUrl = result.delete_url;
     expect(url).toMatch(URL_REGEX);
@@ -159,6 +161,8 @@ describe('Test delete URL', () => {
     const id = deleteUrlParts[deleteUrlParts.length - 2];
     const hash = deleteUrlParts[deleteUrlParts.length - 1];
 
+    // Not documented API to delete an image.
+    // It's not guaranteed that this API will work in the future.
     const urlDelete = 'https://ibb.co/json';
     const options = {
       method: 'POST',
@@ -186,25 +190,26 @@ describe('Test delete URL', () => {
 
     // Expect that the image is not accessible.
     const startTime = Date.now();
-    const maxWaitTime = 60 * 1000; // 60 seconds
     let responseAfterDelete;
 
     let removed = false;
-    // Actively wait for the image to expire, checking every 10 seconds
-    while (Date.now() - startTime <= maxWaitTime) {
+    // Actively wait for the image to expire. It's not guaranteed that the image will disappear
+    // as it's not a part of the imgbb API.
+    while (Date.now() - startTime <= DELETE_IMAGE_MAX_WAIT_TIME) {
       responseAfterDelete = await fetch(url);
       if (responseAfterDelete.status === 404) {
+        console.log(`The image is not accessible after ${Date.now() - startTime} milliseconds. `)
         removed = true;
         break;
       }
       console.log(`The image is still accessible after ${Date.now() - startTime} milliseconds. ` 
         + `Status : ${responseAfterDelete.status}`);
 
-      await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 5 second
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
 
     if (!removed) {
-      console.warn(`Image did not expire after ${maxWaitTime / 1000 } seconds`);
+      console.warn(`Image did not expire after ${DELETE_IMAGE_MAX_WAIT_TIME / 1000 } seconds`);
     }
   }, DELETE_IMAGE_TEST_TIMEOUT);
 });

@@ -23,7 +23,8 @@ async function run() {
     const paths = core.getMultilineInput('path');
     const uploadMethod = core.getInput('uploadMethod');
     const apiKey = core.getInput('apiKey');
-    assert(paths.length > 0, 'Missing mandatory parameter "paths"');
+    assert(paths.length > 0, 'Missing mandatory parameter "path"');
+    assert(apiKey.length > 0, 'Missing mandatory parameter "apiKey"');
 
     const results = new Map();
     await Promise.all(

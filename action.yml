@@ -28,7 +28,7 @@ outputs:
   delete_url:
     description: 'A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
   delete_urls:
-    description: 'Same as delete_url, but as an array of URLs to delete the images
+    description: 'Same as delete_url, but as an array of URLs to delete the images'
 runs:
   using: 'node20'
   main: 'dist/index.js'
