@@ -24,6 +24,10 @@ A github action to upload an image.
 
 `expiration` The expiration time of the image in seconds if the upload method supports it. 0 if there is no expiration.
 
+`delete_url` The URL to delete the image if the upload method supports it. If more than one image was uploaded, the output will be a multiline string.
+
+`delete_urls` The resulting list of URLs to delete the images as an array.
+
 ## Examples:
 Upload an image and comment it in the PR:
 ```
@@ -118,3 +122,5 @@ https://github.com/McCzarny/crypto-mongrels/blob/master/.github/workflows/genera
 Please visit https://api.imgbb.com/ to get Your API key and pass it to the action.
 
 This method supports `expiration` option in seconds 60-15552000. By default, there is no expiration.
+
+This method supports `delete_url` / `delete_urls` output. After uploading an image, the action will return a URL where you can find the delete button. There is no official IMGBB API to delete an image, but it can be done by doing a POST request similar to the one sent by the delete button. You can check `Test delete URL` test in the [tests](https://github.com/McCzarny/upload-image/blob/master/test/uploadImage.test.js) to see how to do it.

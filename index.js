@@ -23,7 +23,8 @@ async function run() {
     const paths = core.getMultilineInput('path');
     const uploadMethod = core.getInput('uploadMethod');
     const apiKey = core.getInput('apiKey');
-    assert(paths.length > 0, 'Missing mandatory parameter "paths"');
+    assert(paths.length > 0, 'Missing mandatory parameter "path"');
+    assert(apiKey.length > 0, 'Missing mandatory parameter "apiKey"');
 
     const results = new Map();
     await Promise.all(
@@ -37,14 +38,18 @@ async function run() {
         }),
     );
 
+    // Setting outputs related to urls
+
     const urls = paths.map((pathToUpload) => {
       return results.get(pathToUpload)?.url;
     });
     core.setOutput('urls', urls);
 
     const url = urls.join('\n');
-	core.debug(`Setting output url to: ${url}`);
+    core.debug(`Setting output url to: ${url}`);
     core.setOutput('url', url);
+
+    // Setting outputs related to expiration
 
     const expiration = paths
         .map((pathToUpload) => {
@@ -53,6 +58,17 @@ async function run() {
         .join('\n');
     core.debug(`Setting output expiration to: ${expiration}`);
     core.setOutput('expiration', expiration);
+
+    // Setting outputs related to delete urls
+
+    const deleteUrls = paths.map((pathToUpload) => {
+      return results.get(pathToUpload)?.delete_url;
+    });
+    core.setOutput('delete_urls', deleteUrls);
+
+    const deleteUrl = deleteUrls.join('\n');
+    core.debug(`Setting output delete_url to: ${deleteUrl}`);
+    core.setOutput('delete_url', deleteUrl);
   } catch (error) {
     core.setFailed(error.message);
   }

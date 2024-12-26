@@ -9,6 +9,9 @@ const apiKey = process.env['API_KEY'];
 const testIf = (condition, ...args) =>
   condition ? test(...args) : test.skip(...args);
 
+const URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
+const DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
+
 /**
  * Tests for uploadImage.
  *
@@ -22,9 +25,13 @@ testIf(apiKey, 'upload an image', async () => {
       apiKey,
   );
   const url = result.url;
-  expect(url).toMatch(new RegExp('https:\\/\\/i.ibb.co\\/.*\\.png'));
+  expect(url).toMatch(URL_REGEX);
+  
   const expiration = result.expiration;
   expect(expiration).toBeGreaterThanOrEqual(0);
+
+  const delete_url = result.delete_url;
+  expect(delete_url).toMatch(DELETE_URL_REGEX);
 });
 
 test('upload with a wrong API key, should return undefined', async () => {
@@ -82,7 +89,11 @@ describe('Test expiration option', () => {
   });
 
   afterEach(() =>{
-    fs.unlinkSync(uniqueImagePath);
+    try {
+      fs.unlinkSync(uniqueImagePath);
+    } catch (error) {
+      console.log(error);
+    }
   })
 
   const ExpirationInSeconds = 60;
@@ -125,4 +136,80 @@ describe('Test expiration option', () => {
         console.warn(`Image did not expire after ${maxWaitTime / (1000 * 60) } minutes`);
       }
   }, LongTestTimeout);
+});
+
+describe('Test delete URL', () => {
+  const DELETE_IMAGE_MAX_WAIT_TIME = 3 * 60 * 1000; // 3 minutes
+  const DELETE_IMAGE_TEST_TIMEOUT = DELETE_IMAGE_MAX_WAIT_TIME * 2;
+  testIf(apiKey, 'Test delete URL', async () => {
+    const result = await uploadImage(
+      'test-resources/0.png',
+      'imgbb',
+      apiKey,
+    );
+    assert(result, 'Image upload failed');
+    const url = result.url;
+    const deleteUrl = result.delete_url;
+    expect(url).toMatch(URL_REGEX);
+    expect(deleteUrl).toMatch(DELETE_URL_REGEX);
+
+    // Expect that the image is accessible.
+    const responseExists = await fetch(url);
+    expect(responseExists.status).toBe(200);
+
+    const deleteUrlParts = deleteUrl.split('/');
+    const id = deleteUrlParts[deleteUrlParts.length - 2];
+    const hash = deleteUrlParts[deleteUrlParts.length - 1];
+
+    // Not documented API to delete an image.
+    // It's not guaranteed that this API will work in the future.
+    const urlDelete = 'https://ibb.co/json';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({
+        auth_token: apiKey,
+        pathname: `/${id}/${hash}`,
+        action: 'delete',
+        delete: 'image',
+        from: 'resource',
+        'deleting[type]': 'image',
+        'deleting[privacy]': 'public',
+        'deleting[hash]': hash,
+        'deleting[id]': id
+      })
+    };
+    const responseDeleteJson = await fetch(urlDelete, options);
+
+    console.log(responseDeleteJson);
+    expect(responseDeleteJson.status).toBe(200);
+
+    // Expect that the image is not accessible.
+    const startTime = Date.now();
+    let responseAfterDelete;
+
+    let removed = false;
+    // Actively wait for the image to expire. It's not guaranteed that the image will disappear
+    // as it's not a part of the imgbb API.
+    while (Date.now() - startTime <= DELETE_IMAGE_MAX_WAIT_TIME) {
+      responseAfterDelete = await fetch(url);
+      if (responseAfterDelete.status === 404) {
+        console.log(`The image is not accessible after ${Date.now() - startTime} milliseconds. `)
+        removed = true;
+        break;
+      }
+      console.log(`The image is still accessible after ${Date.now() - startTime} milliseconds. ` 
+        + `Status : ${responseAfterDelete.status}`);
+
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
+
+    if (!removed) {
+      console.warn(`Image did not expire after ${DELETE_IMAGE_MAX_WAIT_TIME / 1000 } seconds`);
+    }
+  }, DELETE_IMAGE_TEST_TIMEOUT);
 });
