@@ -1,6 +1,24 @@
 # upload-image action
 A github action to upload an image.
 
+# upload-image action
+A github action to upload an image.
+
+[![GitHub release](https://img.shields.io/github/v/release/McCzarny/upload-image)](https://github.com/McCzarny/upload-image/releases)
+[![Node.js CI](https://github.com/McCzarny/upload-image/actions/workflows/node.js.yml/badge.svg)](https://github.com/McCzarny/upload-image/actions/workflows/node.js.yml)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Table of Contents
+- [Usage](#usage)
+- [Examples](#examples)
+  - [Upload and Comment in PR](#upload-an-image-and-comment-it-in-the-pr)
+  - [Multiple Images Upload](#multiline-example)
+  - [Upload with Expiration](#upload-an-image-with-expiration)
+  - [Using URLs Array](#using-urls-array)
+- [Example Workflow Files](#links-to-the-example-workflow-files)
+  - [Upload and delete](#upload-and-delete)
+  - [Upload and comment](#upload-and-comment)
+- [Supported Upload Methods](#supported-upload-methods)
+
 ## Usage
 
 **Provide all required inputs:**
@@ -29,8 +47,9 @@ A github action to upload an image.
 `delete_urls` The resulting list of URLs to delete the images as an array.
 
 ## Examples:
-Upload an image and comment it in the PR:
-```
+### Upload an image and comment it in the PR
+The following workflow uploads a single image and adds it as a comment to your PR:
+```yaml
     - name: Upload image
       id: upload-image-0
       uses: McCzarny/upload-image@v1.3.0
@@ -49,8 +68,10 @@ Upload an image and comment it in the PR:
           github.issues.createComment({ issue_number, owner, repo, body: 'Uploaded image:\n![0](${{steps.upload-image-0.outputs.url}})'});
 ```
 
-Multiline example:
-```
+### Multiline example:
+Upload multiple images in a single workflow:
+
+```yaml
     - name: Upload image
       id: upload-image-0
       uses: McCzarny/upload-image@v1.3.0
@@ -113,7 +134,12 @@ Using urls array (pass output to `fromJson()` method):
             });
 ```
 
-Link to the example workflow file:
+### Links to the example workflow files:
+
+#### Upload and delete:
+https://github.com/McCzarny/upload-image/blob/master/.github/workflows/example-upload-and-delete.yml
+
+#### Upload and comment:
 https://github.com/McCzarny/crypto-mongrels/blob/master/.github/workflows/generate_mongrel.yml
 
 ## Supported upload methods
