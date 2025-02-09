@@ -61,3 +61,6 @@ jobs:
     - name: delete-image
       id: delete-image-step
       uses: ./delete-imgbb-image
+      with:
+        apiKey: ${{ env.API_KEY }}
+        deleteUrls: ${{ steps.get-delete-url.outputs.delete_url }}
