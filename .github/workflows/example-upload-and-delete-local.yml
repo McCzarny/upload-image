@@ -18,6 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Upload image
       id: upload-image-step
+      # In your case, you would use the action from the marketplace, like this: uses: McCzarny/upload-image@v1.5.0
       uses: ./
       with:
         apiKey: ${{ env.API_KEY }}
@@ -60,6 +61,7 @@ jobs:
     # Delete the image using delete-imgbb-image action.
     - name: delete-image
       id: delete-image-step
+      # In your case, you would use the action from the marketplace, like this: uses: McCzarny/upload-image/delete-imgbb-image@v1.5.0
       uses: ./delete-imgbb-image
       with:
         apiKey: ${{ env.API_KEY }}

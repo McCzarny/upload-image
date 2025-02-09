@@ -30,5 +30,5 @@ outputs:
   delete_urls:
     description: 'Same as delete_url, but as an array of URLs to delete the images'
 runs:
-  using: 'node20'
+  using: 'node23'
   main: 'dist/index.js'

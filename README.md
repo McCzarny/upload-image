@@ -9,6 +9,7 @@ A github action to upload an image.
 
 ## Table of Contents
 - [Usage](#usage)
+- [Delete Image Action](#delete-image-action)
 - [Examples](#examples)
   - [Upload and Comment in PR](#upload-an-image-and-comment-it-in-the-pr)
   - [Multiple Images Upload](#multiline-example)
@@ -46,13 +47,33 @@ A github action to upload an image.
 
 `delete_urls` The resulting list of URLs to delete the images as an array.
 
+## Delete Image Action
+
+This repository also provides an action to delete images uploaded to IMGBB. You can use it as follows:
+
+```yaml
+- name: Delete image
+  uses: McCzarny/upload-image/delete-imgbb-image@v1.5.0
+  with:
+    deleteUrl: ${{ steps.upload-image.outputs.delete_url }}
+    apiKey: '${{ secrets.IMGBB_API_KEY }}'
+```
+
+### Delete Image Action Inputs
+
+- `deleteUrl`: The URL to delete the image. For multiple images, each URL should be on a new line.
+- `deleteUrls`: Alternative input that accepts a JSON array of delete URLs.
+- `apiKey`: Your IMGBB API key.
+
+You can use either the multiline `deleteUrl` or the JSON array `deleteUrls` - both inputs achieve the same result.
+
 ## Examples:
 ### Upload an image and comment it in the PR
 The following workflow uploads a single image and adds it as a comment to your PR:
 ```yaml
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.3.0
+      uses: McCzarny/upload-image@v1.5.0
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
@@ -74,7 +95,7 @@ Upload multiple images in a single workflow:
 ```yaml
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.3.0
+      uses: McCzarny/upload-image@v1.5.0
       if: github.event_name == 'pull_request'
       with:
         path: |
@@ -97,7 +118,7 @@ Upload an image with expiration:
 ```
     - name: Upload image for 10 minutes
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.3.0
+      uses: McCzarny/upload-image@v1.5.0
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
@@ -110,7 +131,7 @@ Using urls array (pass output to `fromJson()` method):
 ```
     - name: Upload images
     id: upload_image
-    uses: McCzarny/upload-image@v1.3.0
+    uses: McCzarny/upload-image@v1.5.0
       if: github.event_name == 'pull_request'
       with:
         path: |
