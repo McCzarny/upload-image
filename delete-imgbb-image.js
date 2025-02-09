@@ -3,8 +3,15 @@ const assert = require('assert');
 const axios = require('axios');
 
 function deleteImage(apiKey, deleteUrl) {
-    const id = deleteUrl.split('/')[3];
-    const hash = deleteUrl.split('/')[4];
+    if (!deleteUrl || deleteUrl.trim() === '') {
+        return Promise.reject(new Error('Invalid delete URL'));
+    }
+    const urlParts = deleteUrl.split('/');
+    if (urlParts.length < 5) {
+        return Promise.reject(new Error('Invalid delete URL'));
+    }
+    const id = urlParts[3];
+    const hash = urlParts[4];
     const url = 'https://ibb.co/json';
     const headers = {
         'accept': 'application/json, text/javascript, */*; q=0.01',
@@ -34,31 +41,65 @@ function deleteImage(apiKey, deleteUrl) {
         data
     };
 
-    axios(config)
+    return axios(config)
         .then(response => {
-            console.log(response.status === 200 ? `Image deleted successfully` : `Failed to delete image`);
-        })
-        .catch(error => {
-            console.error('Error deleting image:', error);
+            if (!response) {
+                throw new Error(`No response received from server for: ${deleteUrl}`);
+            }
+            if (response.status !== 200) {
+                throw new Error(`Failed to delete image: ${deleteUrl}`);
+            }
+            console.log(`Image deleted successfully: ${deleteUrl}`);
+            return response;
         });
 }
-function run() {
+
+async function run() {
 
     const apiKey = core.getInput('apiKey');
     const deleteUrl = core.getInput('deleteUrl');
     const deleteUrls = core.getInput('deleteUrls');
 
     assert(apiKey, 'apiKey is required');
-    assert(deleteUrl || deleteUrls, 'deleteUrl or deleteUrls is required');
+    assert(
+        (deleteUrl && deleteUrl.trim() !== '') || (deleteUrls && deleteUrls.trim() !== ''), 
+        'deleteUrl or deleteUrls is required'
+    );
 
-    if (deleteUrl) {
-        const deleteUrlArray = deleteUrl.split('\n');
-        deleteUrlArray.forEach(url => deleteImage(apiKey, url));
+    const errors = [];
+    const deletePromises = [];
+    let deleteUrlArray = deleteUrl ? deleteUrl.split('\n') : [];
+    console.debug(`Multiline delete URL: ${deleteUrlArray.join(', ')}`);
+
+    {
+        const urlsArray = deleteUrls ? JSON.parse(deleteUrls) : [];
+        console.debug(`Parsed delete URLs: ${urlsArray.join(', ')}`);
+        deleteUrlArray = deleteUrlArray.concat(urlsArray);
     }
-    if (deleteUrls) {
-        const urlsArray = JSON.parse(deleteUrls);
-        urlsArray.forEach(url => deleteImage(apiKey, url));
+
+    console.debug(`Deleting images: ${deleteUrlArray.join(', ')}`);
+    deleteUrlArray.forEach(url => {
+        deletePromises.push(
+            deleteImage(apiKey, url).catch(error => {
+                errors.push(`Failed to delete ${url}: ${error.message}`);
+            })
+        );
+    });
+
+    await Promise.all(deletePromises);
+
+    if (errors.length > 0) {
+        throw new Error(`Failed to delete some images:\n${errors.join('\n')}`);
     }
 }
 
-run();
+// Export the run function instead of running it immediately
+module.exports = run;
+
+// Only run if this is the main module
+if (require.main === module) {
+    run().catch(error => {
+        core.setFailed(error.message);
+        throw error;
+    });
+}
