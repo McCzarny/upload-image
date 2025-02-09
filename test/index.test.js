@@ -259,3 +259,31 @@ testIf(apiKey, 'upload multiple with index.js with a single invalid path, expect
 
   assert(exceptionThrown, 'An invalid path didn\'t throw an exception.');
 });
+
+testIf(apiKey, 'upload an image and delete if using delete-imgbb-image action', async () => {
+  const ip = path.join(__dirname, '..', 'index.js');
+  process.env['GITHUB_OUTPUT'] = githubOutputPath;
+  setInput('path', 'test-resources/0.png');
+  setInput('uploadMethod', 'imgbb');
+  setInput('apiKey', apiKey);
+
+  cp.execFileSync('node', [ip], {env: process.env}).toString();
+
+  const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
+  expect(url).toMatch(URL_REGEX);
+  // Print url for a manual check
+  console.log('url:', url);
+  const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url').trim();
+  expect(delete_url).toMatch(DELETE_URL_REGEX);
+
+  const deleteIp = path.join(__dirname, '..', 'delete-imgbb-image.js');
+  setInput('apiKey', apiKey);
+  setInput('deleteUrl', delete_url);
+
+  try {
+    cp.execFileSync('node', [deleteIp], {env: process.env}).toString();
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    throw error;
+  }
+});
