@@ -16,5 +16,5 @@ inputs:
     default: ''
 
 runs:
-  using: 'node20'
+  using: 'node23'
   main: '../dist/delete-imgbb-image/index.js'
