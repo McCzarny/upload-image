@@ -18,6 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Upload image
       id: upload-image-step
+      # In your case, you would use the action from the marketplace, like this: uses: McCzarny/upload-image@v1.5.0
       uses: ./
       with:
         apiKey: ${{ env.API_KEY }}
@@ -36,7 +37,7 @@ jobs:
         echo "Content of delete-url.json:"
         cat delete-url.json
     - name: Keep delete URL as an artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: delete-url
         path: delete-url.json
@@ -47,7 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: download-delete-url
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: delete-url
     - name: Get delete URL from the artifact
@@ -57,29 +58,11 @@ jobs:
         delete_url=$(cat delete-url.json)
         echo "Delete URL: $delete_url"
         echo "delete_url=$delete_url" >> $GITHUB_OUTPUT
-    # Delete the image using imgbb internal API. It should be replaced with a dedicated action in the future.
+    # Delete the image using delete-imgbb-image action.
     - name: delete-image
-      run: |
-        id=$(echo ${{ fromJson(steps.get-delete-url.outputs.delete_url)[0] }} | cut -d'/' -f4)
-        hash=$(echo ${{ fromJson(steps.get-delete-url.outputs.delete_url)[0] }} | cut -d'/' -f5)
-        echo "ID: $id / Hash: $hash"
-        curl --request POST \
-        --url https://ibb.co/json \
-        --header 'accept: application/json, text/javascript, */*; q=0.01' \
-        --header 'content-type: application/x-www-form-urlencoded; charset=UTF-8' \
-        --header 'origin: https://ibb.co' \
-        --header 'sec-fetch-dest: empty' \
-        --header 'sec-fetch-mode: cors' \
-        --header 'sec-fetch-site: same-origin' \
-        --header 'sec-gpc: 1' \
-        --header 'x-requested-with: XMLHttpRequest' \
-        --data auth_token=$API_KEY \
-        --data pathname=/$id/$hash \
-        --data action=delete \
-        --data delete=image \
-        --data from=resource \
-        --data-urlencode deleting%5Bid%5D=$id \
-        --data-urlencode deleting%5Btype%5D=image \
-        --data-urlencode deleting%5Bprivacy%5D=public \
-        --data-urlencode deleting%5Bhash%5D=$hash
-        echo "Status: $?"
+      id: delete-image-step
+      # In your case, you would use the action from the marketplace, like this: uses: McCzarny/upload-image/delete-imgbb-image@v1.5.0
+      uses: ./delete-imgbb-image
+      with:
+        apiKey: ${{ env.API_KEY }}
+        deleteUrls: ${{ steps.get-delete-url.outputs.delete_url }}

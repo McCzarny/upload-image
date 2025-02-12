@@ -29150,93 +29150,6 @@ module.exports = {
 
 /***/ }),
 
-/***/ 4570:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(9896);
-
-const uploadImage = async (imagePath, method, apiKey, extraOptions = {}) => {
-  const file = fs.readFileSync(imagePath);
-  if (method === 'imgbb') {
-    const imgbbUploadImage = __nccwpck_require__(1096);
-    return imgbbUploadImage(file, apiKey, extraOptions);
-  } else {
-    throw new Error('Unsupported method ' + method + '.');
-  }
-};
-
-module.exports = uploadImage;
-
-
-/***/ }),
-
-/***/ 1096:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/**
- * Upload images to imgbb.
- * @param {string} file a path to the file to upload
- * @param {string} apiKey the API key to access imgbb.com
- * @param {object} extraOptions dictionary with additional options that may be not supported
- *                 by every upload method. imgbb supports name and expiration (in seconds 60-15552000)
- * @see https://api.imgbb.com/ for information about API
- */
-async function uploadFile(file, apiKey, extraOptions) {
-  const assert = __nccwpck_require__(2613);
-  assert(typeof apiKey === 'string' && apiKey.trim().length > 0, 'apiKey must be a non-empty string');
-  const axios = __nccwpck_require__(7269);
-  const FormData = __nccwpck_require__(6454);
-  const data = new FormData();
-
-  const base64Image = file.toString('base64');
-  const params = {key: apiKey};
-
-  if ('name' in extraOptions) {
-    console.log('name: ' + extraOptions.name);
-    params.name = extraOptions.name;
-  }
-
-  if ('expiration' in extraOptions) {
-    params.expiration = extraOptions.expiration;
-  }
-
-  data.append('image', base64Image);
-
-  const config = {
-    method: 'post',
-    url: 'https://api.imgbb.com/1/upload',
-    params: params,
-    headers: {
-      ...data.getHeaders(),
-    },
-    data: data,
-  };
-
-  return axios(config)
-      .then(function(response) {
-        if ('expiration' in extraOptions && response.data.data.expiration != extraOptions.expiration) {
-          console.warn(
-              'expiration is not the same. expected: ' + extraOptions.expiration +
-              ' actual: ' + response.data.data.expiration +
-              '\n Could be caused by reupload of an existing image.');
-        }
-        console.log(JSON.stringify(response.data));
-        return {
-          url: response.data.data.url,
-          expiration: response.data.data.expiration,
-          delete_url: response.data.data.delete_url,
-        };
-      })
-      .catch(function(error) {
-        console.log(error);
-      });
-}
-
-module.exports = uploadFile;
-
-
-/***/ }),
-
 /***/ 2613:
 /***/ ((module) => {
 
@@ -35917,84 +35830,70 @@ module.exports = /*#__PURE__*/JSON.parse('{"application/1d-interleaved-parityfec
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-/**
- * A github action that uploads an image and stores its url.
- */
-
 const core = __nccwpck_require__(7484);
-const uploadImage = __nccwpck_require__(4570);
 const assert = __nccwpck_require__(2613);
+const axios = __nccwpck_require__(7269);
 
-/**
- * Runs the action to upload an image.
- * Expected inputs:
- *  path - The path to the image.
- *  uploadMethod - The upload method to use.
- *  apiKey - The API key if the upload method requires it.
- * Output:
- *  url - The url of the image or undefined if the upload failed.
- *  expiration - The expiration of the image or undefined if the upload method does not support it or failed.
- *
- * most @actions toolkit packages have async methods
- */
-async function run() {
-  try {
-    const paths = core.getMultilineInput('path');
-    const uploadMethod = core.getInput('uploadMethod');
-    const apiKey = core.getInput('apiKey');
-    assert(paths.length > 0, 'Missing mandatory parameter "path"');
-    assert(apiKey.length > 0, 'Missing mandatory parameter "apiKey"');
+function deleteImage(apiKey, deleteUrl) {
+    const id = deleteUrl.split('/')[3];
+    const hash = deleteUrl.split('/')[4];
+    const url = 'https://ibb.co/json';
+    const headers = {
+        'accept': 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'origin': 'https://ibb.co',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sec-gpc': '1',
+        'x-requested-with': 'XMLHttpRequest'
+    };
+    const data = {
+        auth_token: apiKey,
+        pathname: `/${id}/${hash}`,
+        action: 'delete',
+        delete: 'image',
+        from: 'resource',
+        'deleting[id]': id,
+        'deleting[type]': 'image',
+        'deleting[privacy]': 'public',
+        'deleting[hash]': hash
+    };
+    const config = {
+        method: 'POST',
+        url,
+        headers,
+        data
+    };
 
-    const results = new Map();
-    await Promise.all(
-        paths.map(async (pathToUpload) => {
-          core.info(`Uploding an image ${pathToUpload} to ${uploadMethod}...`);
-
-          const result = await uploadImage(pathToUpload, uploadMethod, apiKey);
-          assert(result, 'There was an error uploading the image.');
-          core.info(`Image uploaded to ${result.url} with expiration ${result.expiration}`);
-          results.set(pathToUpload, result);
-        }),
-    );
-
-    // Setting outputs related to urls
-
-    const urls = paths.map((pathToUpload) => {
-      return results.get(pathToUpload)?.url;
-    });
-    core.setOutput('urls', urls);
-
-    const url = urls.join('\n');
-    core.debug(`Setting output url to: ${url}`);
-    core.setOutput('url', url);
-
-    // Setting outputs related to expiration
-
-    const expiration = paths
-        .map((pathToUpload) => {
-          return results.get(pathToUpload)?.expiration;
+    axios(config)
+        .then(response => {
+            console.log(response.status === 200 ? `Image deleted successfully` : `Failed to delete image`);
         })
-        .join('\n');
-    core.debug(`Setting output expiration to: ${expiration}`);
-    core.setOutput('expiration', expiration);
+        .catch(error => {
+            console.error('Error deleting image:', error);
+        });
+}
+function run() {
 
-    // Setting outputs related to delete urls
+    const apiKey = core.getInput('apiKey');
+    const deleteUrl = core.getInput('deleteUrl');
+    const deleteUrls = core.getInput('deleteUrls');
 
-    const deleteUrls = paths.map((pathToUpload) => {
-      return results.get(pathToUpload)?.delete_url;
-    });
-    core.setOutput('delete_urls', deleteUrls);
+    assert(apiKey, 'apiKey is required');
+    assert(deleteUrl || deleteUrls, 'deleteUrl or deleteUrls is required');
 
-    const deleteUrl = deleteUrls.join('\n');
-    core.debug(`Setting output delete_url to: ${deleteUrl}`);
-    core.setOutput('delete_url', deleteUrl);
-  } catch (error) {
-    core.setFailed(error.message);
-  }
+    if (deleteUrl) {
+        const deleteUrlArray = deleteUrl.split('\n');
+        deleteUrlArray.forEach(url => deleteImage(apiKey, url));
+    }
+    if (deleteUrls) {
+        const urlsArray = JSON.parse(deleteUrls);
+        urlsArray.forEach(url => deleteImage(apiKey, url));
+    }
 }
 
 run();
-
 module.exports = __webpack_exports__;
 /******/ })()
 ;

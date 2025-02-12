@@ -1,0 +1,20 @@
+name: 'Delete imgbb image'
+description: 'Deletes an image uploaded on imgbb using the delete URL.'
+branding:
+  icon: 'trash'
+  color: 'gray-dark'
+inputs:
+  deleteUrl:
+    description: 'A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
+    required: false
+  deleteUrls:
+    description: 'Same as deleteUrl, but as an array of URLs to delete the images'
+    required: false
+  apiKey:
+    description: 'API if the upload method needs it.'
+    required: true
+    default: ''
+
+runs:
+  using: 'node20'
+  main: '../dist/delete-imgbb-image/index.js'
