@@ -1,6 +1,117 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 7331:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(7484);
+const assert = __nccwpck_require__(2613);
+const axios = __nccwpck_require__(7269);
+
+function deleteImage(apiKey, deleteUrl) {
+    if (!deleteUrl || deleteUrl.trim() === '') {
+        return Promise.reject(new Error('Invalid delete URL'));
+    }
+    const urlParts = deleteUrl.split('/');
+    if (urlParts.length < 5) {
+        return Promise.reject(new Error('Invalid delete URL'));
+    }
+    const id = urlParts[3];
+    const hash = urlParts[4];
+    const url = 'https://ibb.co/json';
+    const headers = {
+        'accept': 'application/json, text/javascript, */*; q=0.01',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'origin': 'https://ibb.co',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sec-gpc': '1',
+        'x-requested-with': 'XMLHttpRequest'
+    };
+    const data = {
+        auth_token: apiKey,
+        pathname: `/${id}/${hash}`,
+        action: 'delete',
+        delete: 'image',
+        from: 'resource',
+        'deleting[id]': id,
+        'deleting[type]': 'image',
+        'deleting[privacy]': 'public',
+        'deleting[hash]': hash
+    };
+    const config = {
+        method: 'POST',
+        url,
+        headers,
+        data
+    };
+
+    return axios(config)
+        .then(response => {
+            if (!response) {
+                throw new Error(`No response received from server for: ${deleteUrl}`);
+            }
+            if (response.status !== 200) {
+                throw new Error(`Failed to delete image: ${deleteUrl}`);
+            }
+            console.log(`Image deleted successfully: ${deleteUrl}`);
+            return response;
+        });
+}
+
+async function run() {
+
+    const apiKey = core.getInput('apiKey');
+    const deleteUrl = core.getInput('deleteUrl');
+    const deleteUrls = core.getInput('deleteUrls');
+
+    assert(apiKey, 'apiKey is required');
+    assert(
+        (deleteUrl && deleteUrl.trim() !== '') || (deleteUrls && deleteUrls.trim() !== ''), 
+        'deleteUrl or deleteUrls is required'
+    );
+
+    const errors = [];
+    const deletePromises = [];
+    let deleteUrlArray = deleteUrl ? deleteUrl.split('\n') : [];
+    console.debug(`Multiline delete URL: ${deleteUrlArray.join(', ')}`);
+
+    {
+        const urlsArray = deleteUrls ? JSON.parse(deleteUrls) : [];
+        console.debug(`Parsed delete URLs: ${urlsArray.join(', ')}`);
+        deleteUrlArray = deleteUrlArray.concat(urlsArray);
+    }
+
+    console.debug(`Deleting images: ${deleteUrlArray.join(', ')}`);
+    deleteUrlArray.forEach(url => {
+        deletePromises.push(
+            deleteImage(apiKey, url).catch(error => {
+                errors.push(`Failed to delete ${url}: ${error.message}`);
+            })
+        );
+    });
+
+    await Promise.all(deletePromises);
+
+    if (errors.length > 0) {
+        throw new Error(`Failed to delete some images:\n${errors.join('\n')}`);
+    }
+}
+
+// Export the run function instead of running it immediately
+module.exports = run;
+
+// Only run if this is the main module
+if (require.main === require.cache[eval('__filename')]) {
+    run().catch(error => {
+        core.setFailed(error.message);
+        throw error;
+    });
+}
+
+/***/ }),
+
 /***/ 4914:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -35829,72 +35940,13 @@ module.exports = /*#__PURE__*/JSON.parse('{"application/1d-interleaved-parityfec
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-const core = __nccwpck_require__(7484);
-const assert = __nccwpck_require__(2613);
-const axios = __nccwpck_require__(7269);
-
-function deleteImage(apiKey, deleteUrl) {
-    const id = deleteUrl.split('/')[3];
-    const hash = deleteUrl.split('/')[4];
-    const url = 'https://ibb.co/json';
-    const headers = {
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'origin': 'https://ibb.co',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'sec-gpc': '1',
-        'x-requested-with': 'XMLHttpRequest'
-    };
-    const data = {
-        auth_token: apiKey,
-        pathname: `/${id}/${hash}`,
-        action: 'delete',
-        delete: 'image',
-        from: 'resource',
-        'deleting[id]': id,
-        'deleting[type]': 'image',
-        'deleting[privacy]': 'public',
-        'deleting[hash]': hash
-    };
-    const config = {
-        method: 'POST',
-        url,
-        headers,
-        data
-    };
-
-    axios(config)
-        .then(response => {
-            console.log(response.status === 200 ? `Image deleted successfully` : `Failed to delete image`);
-        })
-        .catch(error => {
-            console.error('Error deleting image:', error);
-        });
-}
-function run() {
-
-    const apiKey = core.getInput('apiKey');
-    const deleteUrl = core.getInput('deleteUrl');
-    const deleteUrls = core.getInput('deleteUrls');
-
-    assert(apiKey, 'apiKey is required');
-    assert(deleteUrl || deleteUrls, 'deleteUrl or deleteUrls is required');
-
-    if (deleteUrl) {
-        const deleteUrlArray = deleteUrl.split('\n');
-        deleteUrlArray.forEach(url => deleteImage(apiKey, url));
-    }
-    if (deleteUrls) {
-        const urlsArray = JSON.parse(deleteUrls);
-        urlsArray.forEach(url => deleteImage(apiKey, url));
-    }
-}
-
-run();
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(7331);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
