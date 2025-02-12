@@ -158,7 +158,7 @@ Using urls array (pass output to `fromJson()` method):
 ### Links to the example workflow files:
 
 #### Upload and delete:
-https://github.com/McCzarny/upload-image/blob/master/.github/workflows/example-upload-and-delete.yml
+https://github.com/McCzarny/upload-image/blob/master/.github/workflows/example-upload-and-delete-develop.yml
 
 #### Upload and comment:
 https://github.com/McCzarny/crypto-mongrels/blob/master/.github/workflows/generate_mongrel.yml
