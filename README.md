@@ -21,28 +21,41 @@ A github action to upload an image.
 
 **Provide all required inputs:**
 
-`path` Path to the image(s) you want to upload. A multiline input is supported.
-
-`uploadMethod` Where to upload the image. (see [supported upload methods](#supported-upload-methods)
- )
- 
-`apiKey` The API key for the upload method (if required).
+- `path`: Path to the image(s) you want to upload. A multiline input is supported.
+- `upload-method`: Where to upload the image. (see [supported upload methods](#supported-upload-methods))
+- `api-key`: The API key for the upload method.
 
 **Optional inputs:**
 
-`expiration` The expiration time of the image in seconds if the upload method supports it.
+- `expiration`: The expiration time of the image in seconds if the upload method supports it.
+- `api-secret`: The API secret required for cloudinary upload method.
+- `cloud-name`: The cloud name required for cloudinary upload method.
 
 **Returned values:**
 
-`url` The action returns a URL of the uploaded image as `url` or multiple lines with URLs if more than one path was provided.
+- `url`: The action returns a URL of the uploaded image as `url` or multiple lines with URLs if more than one path was provided.
+- `urls`: The resulting list of URLs of the uploaded images as an array.
+- `expiration`: The expiration time of the image in seconds if the upload method supports it. 0 if there is no expiration.
+- `delete-url`: The URL to delete the image if the upload method supports it. If more than one image was uploaded, the output will be a multiline string.
+- `delete-urls`: The resulting list of URLs to delete the images as an array.
 
-`urls` The resulting list of URLs of the uploaded images as an array.
+**Legacy support:**
 
-`expiration` The expiration time of the image in seconds if the upload method supports it. 0 if there is no expiration.
+There was inconsistency in the naming of inputs and outputs in the previous versions of this action. All inputs and outputs that were in camelCase or snake_case are also available for backward compatibility (e.g., `uploadMethod`, `apiKey`, `delete_url`).
 
-`delete_url` The URL to delete the image if the upload method supports it. If more than one image was uploaded, the output will be a multiline string.
+**Inputs info based on upload method:**
 
-`delete_urls` The resulting list of URLs to delete the images as an array.
+| Upload method | api-key  | expiration    | cloud-name    | api-secret    | 
+| ------------- | -------- | ------------- | ------------- | ------------- |
+| imgbb         | required | optional      | not supported | not supported |
+| cloudinary    | required | not supported | required      | required      |
+
+**Outputs info based on upload method:**
+
+| Upload method | url(s)   | expiration   | delete-url(s) |
+| ------------- | -------- | ------------ | ------------- |
+| imgbb         | present | present       | present       |
+| cloudinary    | present | not supported | not supported |
 
 ## Delete Image Action
 
@@ -52,17 +65,17 @@ This repository also provides an action to delete images uploaded to IMGBB. You 
 - name: Delete image
   uses: McCzarny/upload-image/delete-imgbb-image@v1.5.0
   with:
-    deleteUrl: ${{ steps.upload-image.outputs.delete_url }}
-    apiKey: '${{ secrets.IMGBB_API_KEY }}'
+    delete-url: ${{ steps.upload-image.outputs.delete-url }}
+    api-key: '${{ secrets.IMGBB_API_KEY }}'
 ```
 
 ### Delete Image Action Inputs
 
-- `deleteUrl`: The URL to delete the image. For multiple images, each URL should be on a new line.
-- `deleteUrls`: Alternative input that accepts a JSON array of delete URLs.
-- `apiKey`: Your IMGBB API key.
+- `delete-url`: The URL to delete the image. For multiple images, each URL should be on a new line.
+- `delete-urls`: Alternative input that accepts a JSON array of delete URLs.
+- `api-key`: Your IMGBB API key.
 
-You can use either the multiline `deleteUrl` or the JSON array `deleteUrls` - both inputs achieve the same result.
+You can use either the multiline `delete-url` or the JSON array `delete-urls` - both inputs achieve the same result.
 
 ## Examples:
 ### Upload an image and comment it in the PR
@@ -74,8 +87,8 @@ The following workflow uploads a single image and adds it as a comment to your P
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
-        uploadMethod: imgbb
-        apiKey: '${{ secrets.IMGBB_API_KEY }}'
+        upload-method: imgbb
+        api-key: '${{ secrets.IMGBB_API_KEY }}'
     - name: 'Comment PR'
       uses: actions/github-script@0.3.0
       if: github.event_name == 'pull_request'
@@ -99,8 +112,8 @@ Upload multiple images in a single workflow:
           images/0.png
           images/1.png
           images/2.png
-        uploadMethod: imgbb
-        apiKey: '${{ secrets.IMGBB_API_KEY }}'
+        upload-method: imgbb
+        api-key: '${{ secrets.IMGBB_API_KEY }}'
     - name: 'Comment PR'
       uses: actions/github-script@0.3.0
       if: github.event_name == 'pull_request'
@@ -119,9 +132,9 @@ Upload an image with expiration:
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
-        uploadMethod: imgbb
+        upload-method: imgbb
         expiration: 600
-        apiKey: '${{ secrets.IMGBB_API_KEY }}'
+        api-key: '${{ secrets.IMGBB_API_KEY }}'
 ```
 
 Using urls array (pass output to `fromJson()` method):
@@ -137,8 +150,8 @@ Using urls array (pass output to `fromJson()` method):
           images/2.png
           images/3.png
           images/4.png
-        uploadMethod: imgbb
-        apiKey: '${{ secrets.IMGBB_API_KEY }}'
+        upload-method: imgbb
+        api-key: '${{ secrets.IMGBB_API_KEY }}'
     - name: 'Comment PR'
       uses: actions/github-script@v7.0.1
       if: github.event_name == 'pull_request'
@@ -168,3 +181,6 @@ Please visit https://api.imgbb.com/ to get Your API key and pass it to the actio
 This method supports `expiration` option in seconds 60-15552000. By default, there is no expiration.
 
 This method supports `delete_url` / `delete_urls` output. After uploading an image, the action will return a URL where you can find the delete button. There is no official IMGBB API to delete an image, but it can be done by doing a POST request similar to the one sent by the delete button. You can check `Test delete URL` test in the [tests](https://github.com/McCzarny/upload-image/blob/master/test/uploadImage.test.js) to see how to do it.
+
+### Cloudinary
+Please visit [https://cloudinary.com/](https://console.cloudinary.com/pm/getting-started) to get Your API key, API secret and cloud name and pass them to the action.

@@ -55,15 +55,26 @@ function deleteImage(apiKey, deleteUrl) {
 }
 
 async function run() {
+    // Prefer kebab-case, but support legacy camelCase.
+    let apiKey = core.getInput('api-key');
+    if (!apiKey || apiKey.trim() === '') {
+        apiKey = core.getInput('apiKey');
+    }
 
-    const apiKey = core.getInput('apiKey');
-    const deleteUrl = core.getInput('deleteUrl');
-    const deleteUrls = core.getInput('deleteUrls');
+    let deleteUrl = core.getInput('delete-url');
+    if (!deleteUrl || deleteUrl.trim() === '') {
+        deleteUrl = core.getInput('deleteUrl');
+    }
+
+    let deleteUrls = core.getInput('delete-urls');
+    if (!deleteUrls || deleteUrls.trim() === '') {
+        deleteUrls = core.getInput('deleteUrls');
+    }
 
     assert(apiKey, 'apiKey is required');
     assert(
         (deleteUrl && deleteUrl.trim() !== '') || (deleteUrls && deleteUrls.trim() !== ''), 
-        'deleteUrl or deleteUrls is required'
+        'Either delete-url or delete-urls is required'
     );
 
     const errors = [];

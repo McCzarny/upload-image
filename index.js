@@ -19,12 +19,22 @@ const assert = require('assert');
  * most @actions toolkit packages have async methods
  */
 async function run() {
+  // Helper to get input supporting both kebab-case and camelCase
+  function getInputAny(name, opts) {
+    // Try kebab-case, then camelCase
+    const camel = name.replace(/-([a-z])/g, (m, c) => c.toUpperCase());
+    return (
+      core.getInput(name, opts) ||
+      core.getInput(camel, opts)
+    );
+  }
+
   try {
     const paths = core.getMultilineInput('path');
-    const uploadMethod = core.getInput('uploadMethod');
-    const apiKey = core.getInput('apiKey');
+    const uploadMethod = getInputAny('upload-method').toLocaleLowerCase();
+    const apiKey = getInputAny('api-key');
     assert(paths.length > 0, 'Missing mandatory parameter "path"');
-    assert(apiKey.length > 0, 'Missing mandatory parameter "apiKey"');
+    assert(apiKey.length > 0, 'Missing mandatory parameter "api-key"');
 
     let extraOptions = {};
     if (uploadMethod === 'cloudinary') {
@@ -55,7 +65,6 @@ async function run() {
     );
 
     // Setting outputs related to urls
-
     const urls = paths.map((pathToUpload) => {
       return results.get(pathToUpload)?.url;
     });
@@ -81,10 +90,12 @@ async function run() {
       return results.get(pathToUpload)?.delete_url;
     });
     core.setOutput('delete_urls', deleteUrls);
+    core.setOutput('delete-urls', deleteUrls);
 
     const deleteUrl = deleteUrls.join('\n');
     core.debug(`Setting output delete_url to: ${deleteUrl}`);
     core.setOutput('delete_url', deleteUrl);
+    core.setOutput('delete-url', deleteUrl);
   } catch (error) {
     core.setFailed(error.message);
   }
