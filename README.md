@@ -1,9 +1,6 @@
 # upload-image action
 A github action to upload an image.
 
-# upload-image action
-A github action to upload an image.
-
 [![GitHub release](https://img.shields.io/github/v/release/McCzarny/upload-image)](https://github.com/McCzarny/upload-image/releases)
 [![Node.js CI](https://github.com/McCzarny/upload-image/actions/workflows/node.js.yml/badge.svg)](https://github.com/McCzarny/upload-image/actions/workflows/node.js.yml)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

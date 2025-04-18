@@ -4,7 +4,13 @@ const path = require('path');
 const assert = require('assert');
 const fs = require('fs');
 
-const apiKey = process.env['API_KEY'];
+// Imgbb credentials
+const imgbbApiKey = process.env['API_KEY'];
+
+// Cloudinary credentials
+const cloudinaryApiKey = process.env['CLOUDINARY_API_KEY'];
+const cloudinaryApiSecret = process.env['CLOUDINARY_API_SECRET'];
+const cloudinaryCloudName = process.env['CLOUDINARY_CLOUD_NAME'];
 
 const testIf = (condition, ...args) =>
   condition ? test(...args) : test.skip(...args);
@@ -104,8 +110,10 @@ afterEach(() => {
   fs.unlinkSync(githubOutputPath);
 });
 
-const URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
-const DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
+const IMGBB_URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
+const IMGBB_DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
+
+const CLOUDINARY_URL_REGEX = /https:\/\/res.cloudinary.com\/.*\/image\/upload\/.*\.png/;
 
 /**
  * Tests for index.js.
@@ -114,10 +122,10 @@ const DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
  */
 
 // shows how the runner will run a javascript action with env / stdout protocol
-testIf(apiKey, 'upload an image using index.js', () => {
+testIf(imgbbApiKey, 'upload an image using index.js', () => {
   setInput('path', 'test-resources/0.png');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', apiKey);
+  setInput('apiKey', imgbbApiKey);
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
   try {
@@ -134,7 +142,7 @@ testIf(apiKey, 'upload an image using index.js', () => {
 
   // url
   const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
-  expect(url).toMatch(URL_REGEX);
+  expect(url).toMatch(IMGBB_URL_REGEX);
   
   // expiration
   const expiration = getValueFromGithubOutput(githubOutputPath, 'expiration').trim();
@@ -154,7 +162,7 @@ testIf(apiKey, 'upload an image using index.js', () => {
 
   // delete_url
   const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url').trim();
-  expect(delete_url).toMatch(DELETE_URL_REGEX);
+  expect(delete_url).toMatch(IMGBB_DELETE_URL_REGEX);
 
   // delete_urls
   const delete_urls = getValueFromGithubOutput(githubOutputPath, 'delete_urls');
@@ -181,10 +189,10 @@ test('upload using index.js with an invalid API key, expect a failure', () => {
   assert(exceptionThrown, 'An invalid API key didn\'t throw an exception.');
 });
 
-testIf(apiKey, 'upload multiple images using index.js', () => {
+testIf(imgbbApiKey, 'upload multiple images using index.js', () => {
   setInput('path', 'test-resources/0.png\ntest-resources/1.png\ntest-resources/2.png');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', apiKey);
+  setInput('apiKey', imgbbApiKey);
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
 
@@ -225,7 +233,7 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
   expect(urlsArray.length).toBe(3);
   for (const uploadedUrl of urlsArray) {
     expect(uploadedUrl.length).toBeGreaterThan(0);
-    expect(uploadedUrl).toMatch(URL_REGEX);
+    expect(uploadedUrl).toMatch(IMGBB_URL_REGEX);
   }
 
   // delete_url
@@ -240,14 +248,14 @@ testIf(apiKey, 'upload multiple images using index.js', () => {
   expect(delete_urlsArray.length).toBe(3);
   for (const deleteUrl of delete_urlsArray) {
     expect(deleteUrl.length).toBeGreaterThan(0);
-    expect(deleteUrl).toMatch(DELETE_URL_REGEX);
+    expect(deleteUrl).toMatch(IMGBB_DELETE_URL_REGEX);
   }
 });
 
-testIf(apiKey, 'upload multiple with index.js with a single invalid path, expect a failure', () => {
+testIf(imgbbApiKey, 'upload multiple with index.js with a single invalid path, expect a failure', () => {
   setInput('path', 'test-resources/0.png\ntest-resources/1.png\ntest-resources/INVALID');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', apiKey);
+  setInput('apiKey', imgbbApiKey);
   const ip = path.join(__dirname, '..', 'index.js');
 
   let exceptionThrown = false;
@@ -260,24 +268,24 @@ testIf(apiKey, 'upload multiple with index.js with a single invalid path, expect
   assert(exceptionThrown, 'An invalid path didn\'t throw an exception.');
 });
 
-testIf(apiKey, 'upload an image and delete if using delete-imgbb-image action', async () => {
+testIf(imgbbApiKey, 'upload an image and delete if using delete-imgbb-image action', async () => {
   const ip = path.join(__dirname, '..', 'index.js');
   process.env['GITHUB_OUTPUT'] = githubOutputPath;
   setInput('path', 'test-resources/0.png');
   setInput('uploadMethod', 'imgbb');
-  setInput('apiKey', apiKey);
+  setInput('apiKey', imgbbApiKey);
 
   cp.execFileSync('node', [ip], {env: process.env}).toString();
 
   const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
-  expect(url).toMatch(URL_REGEX);
+  expect(url).toMatch(IMGBB_URL_REGEX);
   // Print url for a manual check
   console.log('url:', url);
   const delete_url = getValueFromGithubOutput(githubOutputPath, 'delete_url').trim();
-  expect(delete_url).toMatch(DELETE_URL_REGEX);
+  expect(delete_url).toMatch(IMGBB_DELETE_URL_REGEX);
 
   const deleteIp = path.join(__dirname, '..', 'delete-imgbb-image.js');
-  setInput('apiKey', apiKey);
+  setInput('apiKey', imgbbApiKey);
   setInput('deleteUrl', delete_url);
 
   try {
@@ -286,4 +294,37 @@ testIf(apiKey, 'upload an image and delete if using delete-imgbb-image action', 
     console.error('Error deleting image:', error);
     throw error;
   }
+});
+
+testIf(cloudinaryApiKey && cloudinaryApiSecret && cloudinaryCloudName, 'upload an image using index.js with Cloudinary', () => {
+  setInput('path', 'test-resources/0.png');
+  setInput('uploadMethod', 'cloudinary');
+  setInput('apiKey', cloudinaryApiKey);
+  setInput('api-secret', cloudinaryApiSecret);
+  setInput('cloud-name', cloudinaryCloudName);
+  const ip = path.join(__dirname, '..', 'index.js');
+  process.env['GITHUB_OUTPUT'] = githubOutputPath;
+  try {
+    const childProcess = cp.execFileSync('node', [ip], {env: process.env});
+    console.log(childProcess.toString());
+  } catch (error) {
+    console.log(error);
+    console.log('std out:' + new TextDecoder().decode(error.stdout));
+    throw error;
+  }
+  // Expect that GITHUB_OUTPUT contains the url of the uploaded image
+  const fileExists = fs.existsSync(githubOutputPath);
+  expect(fileExists).toBe(true);
+
+  // url
+  const url = getValueFromGithubOutput(githubOutputPath, 'url').trim();
+  expect(url).toMatch(CLOUDINARY_URL_REGEX);
+
+  // urls
+  const urls = getValueFromGithubOutput(githubOutputPath, 'urls');
+  expect(urls.length).toBeGreaterThan(0);
+  const urlsArray = JSON.parse(urls);
+  expect(Array.isArray(urlsArray)).toBeTruthy();
+  expect(urlsArray.length).toBe(1);
+  expect(urlsArray[0]).toBe(url);
 });

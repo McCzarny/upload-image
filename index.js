@@ -26,12 +26,28 @@ async function run() {
     assert(paths.length > 0, 'Missing mandatory parameter "path"');
     assert(apiKey.length > 0, 'Missing mandatory parameter "apiKey"');
 
+    let extraOptions = {};
+    if (uploadMethod === 'cloudinary') {
+      const cloudName = core.getInput('cloud-name');
+      const apiSecret = core.getInput('api-secret');
+      assert(cloudName.length > 0, 'Missing mandatory parameter "cloud-name"');
+      assert(apiSecret.length > 0, 'Missing mandatory parameter "api-secret"');
+      extraOptions['cloud-name'] = cloudName;
+      extraOptions['api-secret'] = apiSecret;
+    }
+
+    if (uploadMethod === 'imgbb') {
+      // Optional expiration parameter
+      const expiration = core.getInput('expiration');
+      extraOptions['expiration'] = expiration;
+    }
+
     const results = new Map();
     await Promise.all(
         paths.map(async (pathToUpload) => {
-          core.info(`Uploding an image ${pathToUpload} to ${uploadMethod}...`);
+          core.info(`Uploading an image ${pathToUpload} to ${uploadMethod}...`);
 
-          const result = await uploadImage(pathToUpload, uploadMethod, apiKey);
+          const result = await uploadImage(pathToUpload, uploadMethod, apiKey, extraOptions);
           assert(result, 'There was an error uploading the image.');
           core.info(`Image uploaded to ${result.url} with expiration ${result.expiration}`);
           results.set(pathToUpload, result);

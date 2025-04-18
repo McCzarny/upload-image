@@ -23,6 +23,7 @@ testIf(apiKey, 'upload an image', async () => {
       'test-resources/0.png',
       'imgbb',
       apiKey,
+      {}
   );
   const url = result.url;
   expect(url).toMatch(URL_REGEX);
@@ -39,6 +40,7 @@ test('upload with a wrong API key, should return undefined', async () => {
       'test-resources/0.png',
       'imgbb',
       'incorrect-api-key',
+      {}
   );
   assert(
       typeof result === 'undefined',
@@ -146,6 +148,7 @@ describe('Test delete URL', () => {
       'test-resources/0.png',
       'imgbb',
       apiKey,
+      {}
     );
     assert(result, 'Image upload failed');
     const url = result.url;
