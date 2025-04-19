@@ -204,7 +204,15 @@ describe('Test delete URL', () => {
     // Actively wait for the image to expire. It's not guaranteed that the image will disappear
     // as it's not a part of the imgbb API.
     while (Date.now() - startTime <= DELETE_IMAGE_MAX_WAIT_TIME) {
-      responseAfterDelete = await fetch(url);
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      try {
+        responseAfterDelete = await fetch(url);
+      }
+      catch (error) {
+        console.error('Error fetching the image:', error);
+        continue;
+      }
+
       if (responseAfterDelete.status === 404) {
         console.log(`The image is not accessible after ${Date.now() - startTime} milliseconds. `)
         removed = true;
@@ -213,7 +221,6 @@ describe('Test delete URL', () => {
       console.log(`The image is still accessible after ${Date.now() - startTime} milliseconds. ` 
         + `Status : ${responseAfterDelete.status}`);
 
-      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
 
     if (!removed) {
