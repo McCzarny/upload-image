@@ -7,13 +7,21 @@ inputs:
   path:
     description: 'Path(s) to the image(s) to upload.'
     required: true
-  uploadMethod:
+  upload-method:
     description: 'Where to upload images.'
     required: true
     default: 
-  apiKey:
+  uploadMethod: # legacy support
+    description: '[DEPRECATED: use upload-method] Where to upload images.'
+    required: false
+    default: 
+  api-key:
     description: 'API if the upload method needs it.'
     required: true
+    default: ''
+  apiKey: # legacy support
+    description: '[DEPRECATED: use api-key] API if the upload method needs it.'
+    required: false
     default: ''
   expiration:
     description: 'How long the image(s) should be available is seconds.'
@@ -25,10 +33,14 @@ outputs:
     description: 'Same as url, but as an array of URLs of the uploaded images.'
   expiration:
     description: 'When the image expires in seconds. If multiple images are uploaded, each expiration is returned in a new line.'
-  delete_url:
+  delete-url:
     description: 'A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
-  delete_urls:
-    description: 'Same as delete_url, but as an array of URLs to delete the images'
+  delete_url: # legacy support
+    description: '[DEPRECATED: use delete-url] A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
+  delete-urls:
+    description: 'Same as delete-url, but as an array of URLs to delete the images'
+  delete_urls: # legacy support
+    description: '[DEPRECATED: use delete-urls] Same as delete-url, but as an array of URLs to delete the images'
 runs:
   using: 'node20'
   main: 'dist/index.js'

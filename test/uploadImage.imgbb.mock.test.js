@@ -28,7 +28,8 @@ describe("Mocked Tests for uploadImage", () => {
     const result = await uploadImage(
       "test-resources/0.png",
       "imgbb",
-      "correct-api-key"
+      "correct-api-key",
+      {}
     );
     expect(result.url).toBe(MOCK_URL);
     expect(result.expiration).toBe(3600);
@@ -41,7 +42,8 @@ describe("Mocked Tests for uploadImage", () => {
     const result = await uploadImage(
       "test-resources/0.png",
       "imgbb",
-      "incorrect-api-key"
+      "incorrect-api-key",
+      {}
     );
     assert(
       typeof result === "undefined",

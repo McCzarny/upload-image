@@ -4,17 +4,34 @@ branding:
   icon: 'trash'
   color: 'gray-dark'
 inputs:
-  deleteUrl:
+  delete-url:
     description: 'A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
     required: false
-  deleteUrls:
-    description: 'Same as deleteUrl, but as an array of URLs to delete the images'
+  deleteUrl: # legacy support
+    description: '[DEPRECATED: use delete-url] A URL to delete the image. If multiple images are uploaded, each URL is returned in a new line.'
     required: false
-  apiKey:
+  delete-urls:
+    description: 'Same as delete-url, but as an array of URLs to delete the images'
+    required: false
+  deleteUrls: # legacy support
+    description: '[DEPRECATED: use delete-urls] Same as delete-url, but as an array of URLs to delete the images'
+    required: false
+  api-key:
     description: 'API if the upload method needs it.'
     required: true
     default: ''
-
+  apiKey: # legacy support
+    description: '[DEPRECATED: use api-key] API if the upload method needs it.'
+    required: false
+    default: ''
+  api-secret:
+    description: 'API secret for cloudinary upload method.'
+    required: false
+    default: ''
+  cloud-name:
+    description: 'Cloud name for cloudinary upload .'
+    required: false
+    default: ''
 runs:
   using: 'node20'
   main: '../dist/delete-imgbb-image/index.js'
