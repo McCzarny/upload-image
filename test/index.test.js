@@ -310,7 +310,9 @@ testIf(imgbbApiKey, 'upload an image and delete if using delete-imgbb-image acti
   }
 });
 
-testIf(cloudinaryApiKey && cloudinaryApiSecret && cloudinaryCloudName, 'upload an image using index.js with Cloudinary', () => {
+testIf(
+  cloudinaryApiKey && cloudinaryApiSecret && cloudinaryCloudName,
+  'upload an image using index.js with Cloudinary', () => {
   setInput('path', 'test-resources/0.png');
   setInput('upload-method', 'cloudinary');
   setInput('api-key', cloudinaryApiKey);
