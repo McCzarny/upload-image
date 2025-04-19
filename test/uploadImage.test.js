@@ -125,8 +125,13 @@ describe('Test expiration option', () => {
       let removed = false;
       // Actively wait for the image to expire, checking every 10 seconds
       while (Date.now() - startTime <= maxWaitTime) {
-        response2 = await fetch(url);
-        if (response2.status === 404) {
+        try {
+          response2 = await fetch(url);
+        }
+        catch (error) {
+          console.error('Error fetching the image:', error);
+        }
+        if (response2 && response2.status === 404) {
           removed = true;
           break;
         }
