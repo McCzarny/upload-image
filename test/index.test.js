@@ -118,7 +118,7 @@ afterEach(() => {
 const IMGBB_URL_REGEX = /https:\/\/i\.ibb\.co\/.*\.png/;
 const IMGBB_DELETE_URL_REGEX = /https:\/\/ibb\.co\/.*/;
 
-const CLOUDINARY_URL_REGEX = /https:\/\/res.cloudinary.com\/.*\/image\/upload\/.*\.png/;
+const CLOUDINARY_URL_REGEX = /https:\/\/res\.cloudinary\.com\/.*\/image\/upload\/.*\.png/;
 
 /**
  * Tests for index.js.
