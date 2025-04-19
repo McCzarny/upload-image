@@ -2,9 +2,9 @@ const cloudinary = require('cloudinary').v2;
 
 /**
  * Uploads an image to Cloudinary.
- * @param {Buffer} filePath - The file path to upload.
+ * @param {string} filePath - The file path to upload.
  * @param {string} apiKey - The API key (not used for Cloudinary but kept for consistency).
- * @param {Object} extraOptions - Additional options for the upload (e.g., folder, tags).
+ * @param {Object} extraOptions - Additional options for the upload. Expecting 'cloud-name' and 'api-secret'.
  * @returns {Promise<Object>} - The result of the upload.
  */
 async function uploadToCloudinary(filePath, apiKey, extraOptions = {}) {
