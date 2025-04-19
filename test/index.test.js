@@ -7,10 +7,22 @@ const fs = require('fs');
 // Imgbb credentials
 const imgbbApiKey = process.env['API_KEY'];
 
+if (!imgbbApiKey) {
+  console.warn('API_KEY is not set. Skipping Imgbb tests.');
+}
+
 // Cloudinary credentials
 const cloudinaryApiKey = process.env['CLOUDINARY_API_KEY'];
 const cloudinaryApiSecret = process.env['CLOUDINARY_API_SECRET'];
 const cloudinaryCloudName = process.env['CLOUDINARY_CLOUD_NAME'];
+
+if (!cloudinaryApiKey) {
+  console.warn('CLOUDINARY_API_KEY is not set. Skipping Cloudinary tests.');
+}else if (!cloudinaryApiSecret) {
+  console.warn('CLOUDINARY_API_SECRET is not set. Skipping Cloudinary tests.');
+} else if (!cloudinaryCloudName) {
+  console.warn('CLOUDINARY_CLOUD_NAME is not set. Skipping Cloudinary tests.');
+}
 
 const testIf = (condition, ...args) =>
   condition ? test(...args) : test.skip(...args);
@@ -298,7 +310,9 @@ testIf(imgbbApiKey, 'upload an image and delete if using delete-imgbb-image acti
   }
 });
 
-testIf(cloudinaryApiKey && cloudinaryApiSecret && cloudinaryCloudName, 'upload an image using index.js with Cloudinary', () => {
+testIf(
+  cloudinaryApiKey && cloudinaryApiSecret && cloudinaryCloudName,
+  'upload an image using index.js with Cloudinary', () => {
   setInput('path', 'test-resources/0.png');
   setInput('upload-method', 'cloudinary');
   setInput('api-key', cloudinaryApiKey);
