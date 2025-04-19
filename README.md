@@ -63,7 +63,7 @@ This repository also provides an action to delete images uploaded to IMGBB. You 
 
 ```yaml
 - name: Delete image
-  uses: McCzarny/upload-image/delete-imgbb-image@v1.5.0
+  uses: McCzarny/upload-image/delete-imgbb-image@v2.0.0
   with:
     delete-url: ${{ steps.upload-image.outputs.delete-url }}
     api-key: '${{ secrets.IMGBB_API_KEY }}'
@@ -83,7 +83,7 @@ The following workflow uploads a single image and adds it as a comment to your P
 ```yaml
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.5.0
+      uses: McCzarny/upload-image@v2.0.0
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
@@ -105,7 +105,7 @@ Upload multiple images in a single workflow:
 ```yaml
     - name: Upload image
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.5.0
+      uses: McCzarny/upload-image@v2.0.0
       if: github.event_name == 'pull_request'
       with:
         path: |
@@ -128,7 +128,7 @@ Upload an image with expiration:
 ```
     - name: Upload image for 10 minutes
       id: upload-image-0
-      uses: McCzarny/upload-image@v1.5.0
+      uses: McCzarny/upload-image@v2.0.0
       if: github.event_name == 'pull_request'
       with:
         path: images/0.png
@@ -141,7 +141,7 @@ Using urls array (pass output to `fromJson()` method):
 ```
     - name: Upload images
     id: upload_image
-    uses: McCzarny/upload-image@v1.5.0
+    uses: McCzarny/upload-image@v2.0.0
       if: github.event_name == 'pull_request'
       with:
         path: |
