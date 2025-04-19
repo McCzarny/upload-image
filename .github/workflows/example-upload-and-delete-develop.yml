@@ -3,8 +3,6 @@ name: Example of upload-image action where it is used to upload an image and the
 on:
   push:
     branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
 
 env:
   API_KEY: ${{ secrets.API_KEY }}
