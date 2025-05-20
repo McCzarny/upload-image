@@ -6,6 +6,8 @@ name: Node.js CI
 on:
   push:
     branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
 
 env:
   API_KEY: ${{ secrets.API_KEY }}
