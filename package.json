@@ -1,6 +1,6 @@
 {
   "name": "upload-image",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "An action that uploads an image and stores a url to it.",
   "main": "index.js",
   "scripts": {
@@ -36,7 +36,7 @@
     "@actions/core": "^1.11.1",
     "acorn": "^8.8.0",
     "axios": "^1.12.0",
-    "cloudinary": "^2.6.0",
+    "cloudinary": "^2.8.0",
     "form-data": "^4.0.4",
     "jquery": "^3.7.1"
   },
