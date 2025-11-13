@@ -3886,6 +3886,27 @@ exports.restore = function restore(public_ids, callback, options = {}) {
   }, callback, options);
 };
 
+exports.restore_by_asset_ids = function restore_by_asset_ids(asset_ids, callback, options = {}) {
+  options.content_type = "json";
+  let uri = ["resources", "restore"];
+
+  // make sure asset_ids is always an array
+  if (!Array.isArray(asset_ids)) {
+    asset_ids = [asset_ids];
+  }
+
+  return call_api(
+    "post",
+    uri,
+    {
+      asset_ids: asset_ids,
+      versions: options.versions
+    },
+    callback,
+    options
+  );
+};
+
 exports.update = function update(public_id, callback, options = {}) {
   let params, resource_type, type, uri;
   resource_type = options.resource_type || "image";
@@ -3908,6 +3929,13 @@ exports.delete_resources = function delete_resources(public_ids, callback, optio
   uri = ["resources", resource_type, type];
   return call_api("delete", uri, deleteResourcesParams(options, {
     "public_ids[]": public_ids
+  }), callback, options);
+};
+
+exports.delete_resources_by_asset_ids = function delete_resources_by_asset_ids(asset_ids, callback, options = {}) {
+  let uri = ["resources"]
+  return call_api("delete", uri, deleteResourcesParams(options, {
+    "asset_ids[]": asset_ids
   }), callback, options);
 };
 
@@ -5415,12 +5443,7 @@ class PreloadedFile {
   }
 
   is_valid() {
-    let expected_signature;
-    expected_signature = utils.api_sign_request({
-      public_id: this.public_id,
-      version: this.version
-    }, config().api_secret);
-    return this.signature === expected_signature;
+    return utils.verify_api_response_signature(this.public_id, this.version, this.signature);
   }
 
   static split_format(identifier) {
@@ -7862,9 +7885,7 @@ function generate_transformation_string(options) {
   let base_transformations = toArray(consumeOption(options, "transformation", []));
   let named_transformation = [];
   if (base_transformations.some(isObject)) {
-    base_transformations = base_transformations.map(tr => utils.generate_transformation_string(
-      isObject(tr) ? clone(tr) : {transformation: tr}
-    ));
+    base_transformations = base_transformations.map(tr => utils.generate_transformation_string(isObject(tr) ? clone(tr) : {transformation: tr}));
   } else {
     named_transformation = base_transformations.join(".");
     base_transformations = [];
@@ -7873,9 +7894,7 @@ function generate_transformation_string(options) {
   if (isArray(effect)) {
     effect = effect.join(":");
   } else if (isObject(effect)) {
-    effect = entries(effect).map(
-      ([key, value]) => `${key}:${value}`
-    );
+    effect = entries(effect).map(([key, value]) => `${key}:${value}`);
   }
   let border = consumeOption(options, "border");
   if (isObject(border)) {
@@ -7952,9 +7971,7 @@ function generate_transformation_string(options) {
     .map(([key, value]) => {
       delete options[key];
       return `${key}_${normalize_expression(value)}`;
-    }).sort().concat(
-      variablesParam.map(([name, value]) => `${name}_${normalize_expression(value)}`)
-    ).join(',');
+    }).sort().concat(variablesParam.map(([name, value]) => `${name}_${normalize_expression(value)}`)).join(',');
 
   let transformations = entries(params)
     .filter(([key, value]) => utils.present(value))
@@ -7967,8 +7984,7 @@ function generate_transformation_string(options) {
   base_transformations.push(transformations);
   transformations = base_transformations;
   if (responsive_width) {
-    let responsive_width_transformation = config().responsive_width_transformation
-      || DEFAULT_RESPONSIVE_WIDTH_TRANSFORMATION;
+    let responsive_width_transformation = config().responsive_width_transformation || DEFAULT_RESPONSIVE_WIDTH_TRANSFORMATION;
 
     transformations.push(utils.generate_transformation_string(clone(responsive_width_transformation)));
   }
@@ -8063,27 +8079,7 @@ function updateable_resource_params(options, params = {}) {
  * A list of keys used by the url() function.
  * @private
  */
-const URL_KEYS = [
-  'api_secret',
-  'auth_token',
-  'cdn_subdomain',
-  'cloud_name',
-  'cname',
-  'format',
-  'long_url_signature',
-  'private_cdn',
-  'resource_type',
-  'secure',
-  'secure_cdn_subdomain',
-  'secure_distribution',
-  'shorten',
-  'sign_url',
-  'ssl_detected',
-  'type',
-  'url_suffix',
-  'use_root_path',
-  'version'
-];
+const URL_KEYS = ['api_secret', 'auth_token', 'cdn_subdomain', 'cloud_name', 'cname', 'format', 'long_url_signature', 'private_cdn', 'resource_type', 'secure', 'secure_cdn_subdomain', 'secure_distribution', 'shorten', 'sign_url', 'ssl_detected', 'type', 'url_suffix', 'use_root_path', 'version'];
 
 /**
  * Create a new object with only URL parameters
@@ -8248,9 +8244,7 @@ function url(public_id, options = {}) {
       urlAnalytics
     };
 
-    let analyticsOptions = getAnalyticsOptions(
-      Object.assign({}, options, sdkVersions)
-    );
+    let analyticsOptions = getAnalyticsOptions(Object.assign({}, options, sdkVersions));
 
     let sdkAnalyticsSignature = getSDKAnalyticsSignature(analyticsOptions);
 
@@ -8351,16 +8345,7 @@ function finalize_resource_type(resource_type, type, url_suffix, use_root_path, 
 //    if cdn_domain is true uses a[1-5].cname for http.
 //    For https, uses the same naming scheme as 1 for shared distribution and as 2 for private distribution.
 
-function unsigned_url_prefix(
-  source,
-  cloud_name,
-  private_cdn,
-  cdn_subdomain,
-  secure_cdn_subdomain,
-  cname,
-  secure,
-  secure_distribution
-) {
+function unsigned_url_prefix(source, cloud_name, private_cdn, cdn_subdomain, secure_cdn_subdomain, cname, secure, secure_distribution) {
   let prefix;
   if (cloud_name.indexOf("/") === 0) {
     return '/res' + cloud_name;
@@ -8430,13 +8415,42 @@ function signed_preloaded_image(result) {
   return `${result.resource_type}/upload/v${result.version}/${filter([result.public_id, result.format], utils.present).join(".")}#${result.signature}`;
 }
 
-function api_sign_request(params_to_sign, api_secret) {
-  let to_sign = entries(params_to_sign).filter(
-    ([k, v]) => utils.present(v)
-  ).map(
-    ([k, v]) => `${k}=${toArray(v).join(",")}`
-  ).sort().join("&");
-  return compute_hash(to_sign + api_secret, config().signature_algorithm || DEFAULT_SIGNATURE_ALGORITHM, 'hex');
+// Encodes a parameter for safe inclusion in URL query strings (only replaces & with %26)
+function encode_param(value) {
+  return String(value).replace(/&/g, '%26');
+}
+
+// Generates a string to be signed for API requests
+function api_string_to_sign(params_to_sign, signature_version = 2) {
+  let params = entries(params_to_sign)
+    .map(([k, v]) => [String(k), Array.isArray(v) ? v.join(",") : v])
+    .filter(([k, v]) => v !== null && v !== undefined && v !== "");
+  params.sort((a, b) => a[0].localeCompare(b[0]));
+  let paramStrings = params.map(([k, v]) => {
+    const paramString = `${k}=${v}`;
+    return signature_version >= 2 ? encode_param(paramString) : paramString;
+  });
+  return paramStrings.join("&");
+}
+
+/**
+ * Signs API request parameters
+ * @param {Object} params_to_sign Parameters to sign
+ * @param {string} api_secret API secret
+ * @param {string|undefined|null} signature_algorithm Hash algorithm to use ('sha1' or 'sha256')
+ * @param {number|undefined|null} signature_version Version of signature algorithm to use:
+ *   - Version 1: Original behavior without parameter encoding
+ *   - Version 2+ (default): Includes parameter encoding to prevent parameter smuggling
+ * @return {string} Hexadecimal signature
+ * @private
+ */
+function api_sign_request(params_to_sign, api_secret, signature_algorithm = null, signature_version = null) {
+  if (signature_version == null) {
+    signature_version = config().signature_version || 2;
+  }
+  const to_sign = api_string_to_sign(params_to_sign, signature_version);
+  const algo = signature_algorithm || config().signature_algorithm || DEFAULT_SIGNATURE_ALGORITHM;
+  return compute_hash(to_sign + api_secret, algo, 'hex');
 }
 
 /**
@@ -8457,13 +8471,9 @@ function compute_hash(input, signature_algorithm, encoding) {
 
 function clear_blank(hash) {
   let filtered_hash = {};
-  entries(hash).filter(
-    ([k, v]) => utils.present(v)
-  ).forEach(
-    ([k, v]) => {
-      filtered_hash[k] = v.filter ? v.filter(x => x) : v;
-    }
-  );
+  entries(hash).filter(([k, v]) => utils.present(v)).forEach(([k, v]) => {
+    filtered_hash[k] = v.filter ? v.filter(x => x) : v;
+  });
   return filtered_hash;
 }
 
@@ -8481,8 +8491,10 @@ function merge(hash1, hash2) {
 function sign_request(params, options = {}) {
   let apiKey = ensureOption(options, 'api_key');
   let apiSecret = ensureOption(options, 'api_secret');
+  let signature_algorithm = options.signature_algorithm;
+  let signature_version = options.signature_version;
   params = exports.clear_blank(params);
-  params.signature = exports.api_sign_request(params, apiSecret);
+  params.signature = exports.api_sign_request(params, apiSecret, signature_algorithm, signature_version);
   params.api_key = apiKey;
   return params;
 }
@@ -8613,6 +8625,8 @@ function api_download_url(action, params, options) {
  * @param {string} [options.target_format="zip"]
  * @param {string} [options.target_public_id]  public ID of the generated raw resource.
  *   Relevant only for the create mode. If not specified, random public ID is generated.
+ * @param {string} [options.target_asset_folder] The folder where the generated file is placed within the Cloudinary repository.
+ *   Not supported for product environments using the legacy fixed folder mode
  * @param {boolean} [options.flatten_folders=false] If true, flatten public IDs with folders to be in the root
  *   of the archive. Add numeric counter to the file name in case of a name conflict.
  * @param {boolean} [options.flatten_transformations=false] If true, and multiple transformations are given,
@@ -8835,6 +8849,7 @@ function archive_params(options = {}) {
     tags: options.tags && toArray(options.tags),
     target_format: options.target_format,
     target_public_id: options.target_public_id,
+    target_asset_folder: options.target_asset_folder,
     target_tags: options.target_tags && toArray(options.target_tags),
     timestamp: options.timestamp || exports.timestamp(),
     transformations: utils.build_eager(options.transformations),
@@ -8874,9 +8889,7 @@ function generate_responsive_breakpoints_string(breakpoints) {
     let breakpoint_settings = breakpoints[j];
     if (breakpoint_settings != null) {
       if (breakpoint_settings.transformation) {
-        breakpoint_settings.transformation = utils.generate_transformation_string(
-          clone(breakpoint_settings.transformation)
-        );
+        breakpoint_settings.transformation = utils.generate_transformation_string(clone(breakpoint_settings.transformation));
       }
     }
   }
@@ -8886,11 +8899,9 @@ function generate_responsive_breakpoints_string(breakpoints) {
 function build_streaming_profiles_param(options = {}) {
   let params = pickOnlyExistingValues(options, "display_name", "representations");
   if (isArray(params.representations)) {
-    params.representations = JSON.stringify(params.representations.map(
-      r => ({
-        transformation: utils.generate_transformation_string(r.transformation)
-      })
-    ));
+    params.representations = JSON.stringify(params.representations.map(r => ({
+      transformation: utils.generate_transformation_string(r.transformation)
+    })));
   }
   return params;
 }
@@ -8915,9 +8926,7 @@ function hashToParameters(hash) {
  * @return {string} A URI query string.
  */
 function hashToQuery(hash) {
-  return hashToParameters(hash).map(
-    ([key, value]) => `${querystring.escape(key)}=${querystring.escape(value)}`
-  ).join('&');
+  return hashToParameters(hash).map(([key, value]) => `${querystring.escape(key)}=${querystring.escape(value)}`).join('&');
 }
 
 /**
@@ -9060,6 +9069,30 @@ Object.assign(module.exports, {
   keys: source => Object.keys(source),
   ensurePresenceOf
 });
+
+/**
+ * Verifies an API response signature for a given public_id and version.
+ * Always uses signature version 1 for backward compatibility, matching the Ruby SDK.
+ * @param {string} public_id
+ * @param {string|number} version
+ * @param {string} signature
+ * @returns {boolean}
+ */
+function verify_api_response_signature(public_id, version, signature) {
+  const api_secret = config().api_secret;
+  const expected = exports.api_sign_request(
+    {
+      public_id,
+      version
+    },
+    api_secret,
+    null,
+    1
+  );
+  return signature === expected;
+}
+
+exports.verify_api_response_signature = verify_api_response_signature;
 
 
 /***/ }),
@@ -9380,8 +9413,10 @@ v1_adapters(exports, api, {
   resources_by_asset_folder: 1,
   resource: 1,
   restore: 1,
+  restore_by_asset_ids: 1,
   update: 1,
   delete_resources: 1,
+  delete_resources_by_asset_ids: 1,
   delete_resources_by_prefix: 1,
   delete_resources_by_tag: 1,
   delete_all_resources: 0,
@@ -64237,7 +64272,7 @@ module.exports = parseParams
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
-/*! Axios v1.8.4 Copyright (c) 2025 Matt Zabriskie and contributors */
+/*! Axios v1.12.0 Copyright (c) 2025 Matt Zabriskie and contributors */
 
 
 const FormData$1 = __nccwpck_require__(6454);
@@ -64275,6 +64310,7 @@ function bind(fn, thisArg) {
 
 const {toString} = Object.prototype;
 const {getPrototypeOf} = Object;
+const {iterator, toStringTag} = Symbol;
 
 const kindOf = (cache => thing => {
     const str = toString.call(thing);
@@ -64315,7 +64351,7 @@ const isUndefined = typeOfTest('undefined');
  */
 function isBuffer(val) {
   return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor)
-    && isFunction(val.constructor.isBuffer) && val.constructor.isBuffer(val);
+    && isFunction$1(val.constructor.isBuffer) && val.constructor.isBuffer(val);
 }
 
 /**
@@ -64360,7 +64396,7 @@ const isString = typeOfTest('string');
  * @param {*} val The value to test
  * @returns {boolean} True if value is a Function, otherwise false
  */
-const isFunction = typeOfTest('function');
+const isFunction$1 = typeOfTest('function');
 
 /**
  * Determine if a value is a Number
@@ -64401,7 +64437,28 @@ const isPlainObject = (val) => {
   }
 
   const prototype = getPrototypeOf(val);
-  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in val) && !(Symbol.iterator in val);
+  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(toStringTag in val) && !(iterator in val);
+};
+
+/**
+ * Determine if a value is an empty object (safely handles Buffers)
+ *
+ * @param {*} val The value to test
+ *
+ * @returns {boolean} True if value is an empty object, otherwise false
+ */
+const isEmptyObject = (val) => {
+  // Early return for non-objects or Buffers to prevent RangeError
+  if (!isObject(val) || isBuffer(val)) {
+    return false;
+  }
+
+  try {
+    return Object.keys(val).length === 0 && Object.getPrototypeOf(val) === Object.prototype;
+  } catch (e) {
+    // Fallback for any other objects that might cause RangeError with Object.keys()
+    return false;
+  }
 };
 
 /**
@@ -64447,7 +64504,7 @@ const isFileList = kindOfTest('FileList');
  *
  * @returns {boolean} True if value is a Stream, otherwise false
  */
-const isStream = (val) => isObject(val) && isFunction(val.pipe);
+const isStream = (val) => isObject(val) && isFunction$1(val.pipe);
 
 /**
  * Determine if a value is a FormData
@@ -64460,10 +64517,10 @@ const isFormData = (thing) => {
   let kind;
   return thing && (
     (typeof FormData === 'function' && thing instanceof FormData) || (
-      isFunction(thing.append) && (
+      isFunction$1(thing.append) && (
         (kind = kindOf(thing)) === 'formdata' ||
         // detect form-data instance
-        (kind === 'object' && isFunction(thing.toString) && thing.toString() === '[object FormData]')
+        (kind === 'object' && isFunction$1(thing.toString) && thing.toString() === '[object FormData]')
       )
     )
   )
@@ -64526,6 +64583,11 @@ function forEach(obj, fn, {allOwnKeys = false} = {}) {
       fn.call(null, obj[i], i, obj);
     }
   } else {
+    // Buffer check
+    if (isBuffer(obj)) {
+      return;
+    }
+
     // Iterate over object keys
     const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
     const len = keys.length;
@@ -64539,6 +64601,10 @@ function forEach(obj, fn, {allOwnKeys = false} = {}) {
 }
 
 function findKey(obj, key) {
+  if (isBuffer(obj)){
+    return null;
+  }
+
   key = key.toLowerCase();
   const keys = Object.keys(obj);
   let i = keys.length;
@@ -64579,7 +64645,7 @@ const isContextDefined = (context) => !isUndefined(context) && context !== _glob
  * @returns {Object} Result of all merge properties
  */
 function merge(/* obj1, obj2, obj3, ... */) {
-  const {caseless} = isContextDefined(this) && this || {};
+  const {caseless, skipUndefined} = isContextDefined(this) && this || {};
   const result = {};
   const assignValue = (val, key) => {
     const targetKey = caseless && findKey(result, key) || key;
@@ -64590,7 +64656,9 @@ function merge(/* obj1, obj2, obj3, ... */) {
     } else if (isArray(val)) {
       result[targetKey] = val.slice();
     } else {
-      result[targetKey] = val;
+      if (!skipUndefined || !isUndefined(val)) {
+        result[targetKey] = val;
+      }
     }
   };
 
@@ -64612,7 +64680,7 @@ function merge(/* obj1, obj2, obj3, ... */) {
  */
 const extend = (a, b, thisArg, {allOwnKeys}= {}) => {
   forEach(b, (val, key) => {
-    if (thisArg && isFunction(val)) {
+    if (thisArg && isFunction$1(val)) {
       a[key] = bind(val, thisArg);
     } else {
       a[key] = val;
@@ -64752,13 +64820,13 @@ const isTypedArray = (TypedArray => {
  * @returns {void}
  */
 const forEachEntry = (obj, fn) => {
-  const generator = obj && obj[Symbol.iterator];
+  const generator = obj && obj[iterator];
 
-  const iterator = generator.call(obj);
+  const _iterator = generator.call(obj);
 
   let result;
 
-  while ((result = iterator.next()) && !result.done) {
+  while ((result = _iterator.next()) && !result.done) {
     const pair = result.value;
     fn.call(obj, pair[0], pair[1]);
   }
@@ -64828,13 +64896,13 @@ const reduceDescriptors = (obj, reducer) => {
 const freezeMethods = (obj) => {
   reduceDescriptors(obj, (descriptor, name) => {
     // skip restricted props in strict mode
-    if (isFunction(obj) && ['arguments', 'caller', 'callee'].indexOf(name) !== -1) {
+    if (isFunction$1(obj) && ['arguments', 'caller', 'callee'].indexOf(name) !== -1) {
       return false;
     }
 
     const value = obj[name];
 
-    if (!isFunction(value)) return;
+    if (!isFunction$1(value)) return;
 
     descriptor.enumerable = false;
 
@@ -64871,6 +64939,8 @@ const toFiniteNumber = (value, defaultValue) => {
   return value != null && Number.isFinite(value = +value) ? value : defaultValue;
 };
 
+
+
 /**
  * If the thing is a FormData object, return true, otherwise return false.
  *
@@ -64879,7 +64949,7 @@ const toFiniteNumber = (value, defaultValue) => {
  * @returns {boolean}
  */
 function isSpecCompliantForm(thing) {
-  return !!(thing && isFunction(thing.append) && thing[Symbol.toStringTag] === 'FormData' && thing[Symbol.iterator]);
+  return !!(thing && isFunction$1(thing.append) && thing[toStringTag] === 'FormData' && thing[iterator]);
 }
 
 const toJSONObject = (obj) => {
@@ -64890,6 +64960,11 @@ const toJSONObject = (obj) => {
     if (isObject(source)) {
       if (stack.indexOf(source) >= 0) {
         return;
+      }
+
+      //Buffer check
+      if (isBuffer(source)) {
+        return source;
       }
 
       if(!('toJSON' in source)) {
@@ -64916,7 +64991,7 @@ const toJSONObject = (obj) => {
 const isAsyncFn = kindOfTest('AsyncFunction');
 
 const isThenable = (thing) =>
-  thing && (isObject(thing) || isFunction(thing)) && isFunction(thing.then) && isFunction(thing.catch);
+  thing && (isObject(thing) || isFunction$1(thing)) && isFunction$1(thing.then) && isFunction$1(thing.catch);
 
 // original code
 // https://github.com/DigitalBrainJS/AxiosPromise/blob/16deab13710ec09779922131f3fa5954320f83ab/lib/utils.js#L11-L34
@@ -64940,13 +65015,17 @@ const _setImmediate = ((setImmediateSupported, postMessageSupported) => {
   })(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
 })(
   typeof setImmediate === 'function',
-  isFunction(_global.postMessage)
+  isFunction$1(_global.postMessage)
 );
 
 const asap = typeof queueMicrotask !== 'undefined' ?
   queueMicrotask.bind(_global) : ( typeof process !== 'undefined' && process.nextTick || _setImmediate);
 
 // *********************
+
+
+const isIterable = (thing) => thing != null && isFunction$1(thing[iterator]);
+
 
 const utils$1 = {
   isArray,
@@ -64959,6 +65038,7 @@ const utils$1 = {
   isBoolean,
   isObject,
   isPlainObject,
+  isEmptyObject,
   isReadableStream,
   isRequest,
   isResponse,
@@ -64968,7 +65048,7 @@ const utils$1 = {
   isFile,
   isBlob,
   isRegExp,
-  isFunction,
+  isFunction: isFunction$1,
   isStream,
   isURLSearchParams,
   isTypedArray,
@@ -65003,7 +65083,8 @@ const utils$1 = {
   isAsyncFn,
   isThenable,
   setImmediate: _setImmediate,
-  asap
+  asap,
+  isIterable
 };
 
 /**
@@ -65093,11 +65174,18 @@ AxiosError.from = (error, code, config, request, response, customProps) => {
     return prop !== 'isAxiosError';
   });
 
-  AxiosError.call(axiosError, error.message, code, config, request, response);
+  const msg = error && error.message ? error.message : 'Error';
 
-  axiosError.cause = error;
+  // Prefer explicit code; otherwise copy the low-level error's code (e.g. ECONNREFUSED)
+  const errCode = code == null && error ? error.code : code;
+  AxiosError.call(axiosError, msg, errCode, config, request, response);
 
-  axiosError.name = error.name;
+  // Chain the original error on the standard field; non-enumerable to avoid JSON noise
+  if (error && axiosError.cause == null) {
+    Object.defineProperty(axiosError, 'cause', { value: error, configurable: true });
+  }
+
+  axiosError.name = (error && error.name) || 'Error';
 
   customProps && Object.assign(axiosError, customProps);
 
@@ -65217,6 +65305,10 @@ function toFormData(obj, formData, options) {
 
     if (utils$1.isDate(value)) {
       return value.toISOString();
+    }
+
+    if (utils$1.isBoolean(value)) {
+      return value.toString();
     }
 
     if (!useBlob && utils$1.isBlob(value)) {
@@ -65381,9 +65473,7 @@ function encode(val) {
     replace(/%3A/gi, ':').
     replace(/%24/g, '$').
     replace(/%2C/gi, ',').
-    replace(/%20/g, '+').
-    replace(/%5B/gi, '[').
-    replace(/%5D/gi, ']');
+    replace(/%20/g, '+');
 }
 
 /**
@@ -65603,7 +65693,7 @@ const platform = {
 };
 
 function toURLEncodedForm(data, options) {
-  return toFormData(data, new platform.classes.URLSearchParams(), Object.assign({
+  return toFormData(data, new platform.classes.URLSearchParams(), {
     visitor: function(value, key, path, helpers) {
       if (platform.isNode && utils$1.isBuffer(value)) {
         this.append(key, value.toString('base64'));
@@ -65611,8 +65701,9 @@ function toURLEncodedForm(data, options) {
       }
 
       return helpers.defaultVisitor.apply(this, arguments);
-    }
-  }, options));
+    },
+    ...options
+  });
 }
 
 /**
@@ -65808,7 +65899,7 @@ const defaults = {
       const strictJSONParsing = !silentJSONParsing && JSONRequested;
 
       try {
-        return JSON.parse(data);
+        return JSON.parse(data, this.parseReviver);
       } catch (e) {
         if (strictJSONParsing) {
           if (e.name === 'SyntaxError') {
@@ -66006,10 +66097,18 @@ class AxiosHeaders {
       setHeaders(header, valueOrRewrite);
     } else if(utils$1.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
       setHeaders(parseHeaders(header), valueOrRewrite);
-    } else if (utils$1.isHeaders(header)) {
-      for (const [key, value] of header.entries()) {
-        setHeader(value, key, rewrite);
+    } else if (utils$1.isObject(header) && utils$1.isIterable(header)) {
+      let obj = {}, dest, key;
+      for (const entry of header) {
+        if (!utils$1.isArray(entry)) {
+          throw TypeError('Object iterator must return a key-value pair');
+        }
+
+        obj[key = entry[0]] = (dest = obj[key]) ?
+          (utils$1.isArray(dest) ? [...dest, entry[1]] : [dest, entry[1]]) : entry[1];
       }
+
+      setHeaders(obj, valueOrRewrite);
     } else {
       header != null && setHeader(valueOrRewrite, header, rewrite);
     }
@@ -66149,6 +66248,10 @@ class AxiosHeaders {
 
   toString() {
     return Object.entries(this.toJSON()).map(([header, value]) => header + ': ' + value).join('\n');
+  }
+
+  getSetCookie() {
+    return this.get("set-cookie") || [];
   }
 
   get [Symbol.toStringTag]() {
@@ -66323,7 +66426,7 @@ function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
   return requestedURL;
 }
 
-const VERSION = "1.8.4";
+const VERSION = "1.12.0";
 
 function parseProtocol(url) {
   const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
@@ -66605,7 +66708,7 @@ const formDataToStream = (form, headersHandler, options) => {
   }
 
   const boundaryBytes = textEncoder.encode('--' + boundary + CRLF);
-  const footerBytes = textEncoder.encode('--' + boundary + '--' + CRLF + CRLF);
+  const footerBytes = textEncoder.encode('--' + boundary + '--' + CRLF);
   let contentLength = footerBytes.byteLength;
 
   const parts = Array.from(form.entries()).map(([name, value]) => {
@@ -66751,7 +66854,7 @@ function throttle(fn, freq) {
       clearTimeout(timer);
       timer = null;
     }
-    fn.apply(null, args);
+    fn(...args);
   };
 
   const throttled = (...args) => {
@@ -66816,6 +66919,80 @@ const progressEventDecorator = (total, throttled) => {
 
 const asyncDecorator = (fn) => (...args) => utils$1.asap(() => fn(...args));
 
+/**
+ * Estimate decoded byte length of a data:// URL *without* allocating large buffers.
+ * - For base64: compute exact decoded size using length and padding;
+ *               handle %XX at the character-count level (no string allocation).
+ * - For non-base64: use UTF-8 byteLength of the encoded body as a safe upper bound.
+ *
+ * @param {string} url
+ * @returns {number}
+ */
+function estimateDataURLDecodedBytes(url) {
+  if (!url || typeof url !== 'string') return 0;
+  if (!url.startsWith('data:')) return 0;
+
+  const comma = url.indexOf(',');
+  if (comma < 0) return 0;
+
+  const meta = url.slice(5, comma);
+  const body = url.slice(comma + 1);
+  const isBase64 = /;base64/i.test(meta);
+
+  if (isBase64) {
+    let effectiveLen = body.length;
+    const len = body.length; // cache length
+
+    for (let i = 0; i < len; i++) {
+      if (body.charCodeAt(i) === 37 /* '%' */ && i + 2 < len) {
+        const a = body.charCodeAt(i + 1);
+        const b = body.charCodeAt(i + 2);
+        const isHex =
+          ((a >= 48 && a <= 57) || (a >= 65 && a <= 70) || (a >= 97 && a <= 102)) &&
+          ((b >= 48 && b <= 57) || (b >= 65 && b <= 70) || (b >= 97 && b <= 102));
+
+        if (isHex) {
+          effectiveLen -= 2;
+          i += 2;
+        }
+      }
+    }
+
+    let pad = 0;
+    let idx = len - 1;
+
+    const tailIsPct3D = (j) =>
+      j >= 2 &&
+      body.charCodeAt(j - 2) === 37 && // '%'
+      body.charCodeAt(j - 1) === 51 && // '3'
+      (body.charCodeAt(j) === 68 || body.charCodeAt(j) === 100); // 'D' or 'd'
+
+    if (idx >= 0) {
+      if (body.charCodeAt(idx) === 61 /* '=' */) {
+        pad++;
+        idx--;
+      } else if (tailIsPct3D(idx)) {
+        pad++;
+        idx -= 3;
+      }
+    }
+
+    if (pad === 1 && idx >= 0) {
+      if (body.charCodeAt(idx) === 61 /* '=' */) {
+        pad++;
+      } else if (tailIsPct3D(idx)) {
+        pad++;
+      }
+    }
+
+    const groups = Math.floor(effectiveLen / 4);
+    const bytes = groups * 3 - (pad || 0);
+    return bytes > 0 ? bytes : 0;
+  }
+
+  return Buffer.byteLength(body, 'utf8');
+}
+
 const zlibOptions = {
   flush: zlib__default["default"].constants.Z_SYNC_FLUSH,
   finishFlush: zlib__default["default"].constants.Z_SYNC_FLUSH
@@ -66836,6 +67013,7 @@ const supportedProtocols = platform.protocols.map(protocol => {
   return protocol + ':';
 });
 
+
 const flushOnFinish = (stream, [throttled, flush]) => {
   stream
     .on('end', flush)
@@ -66843,6 +67021,7 @@ const flushOnFinish = (stream, [throttled, flush]) => {
 
   return throttled;
 };
+
 
 /**
  * If the proxy or config beforeRedirects functions are defined, call them with the options
@@ -67023,6 +67202,21 @@ const httpAdapter = isHttpAdapterSupported && function httpAdapter(config) {
     const protocol = parsed.protocol || supportedProtocols[0];
 
     if (protocol === 'data:') {
+      // Apply the same semantics as HTTP: only enforce if a finite, non-negative cap is set.
+      if (config.maxContentLength > -1) {
+        // Use the exact string passed to fromDataURI (config.url); fall back to fullPath if needed.
+        const dataUrl = String(config.url || fullPath || '');
+        const estimated = estimateDataURLDecodedBytes(dataUrl);
+
+        if (estimated > config.maxContentLength) {
+          return reject(new AxiosError(
+            'maxContentLength size of ' + config.maxContentLength + ' exceeded',
+            AxiosError.ERR_BAD_RESPONSE,
+            config
+          ));
+        }
+      }
+
       let convertedData;
 
       if (method !== 'GET') {
@@ -67625,7 +67819,7 @@ function mergeConfig(config1, config2) {
     headers: (a, b , prop) => mergeDeepProperties(headersToObject(a), headersToObject(b),prop, true)
   };
 
-  utils$1.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop) {
+  utils$1.forEach(Object.keys({...config1, ...config2}), function computeConfigValue(prop) {
     const merge = mergeMap[prop] || mergeDeepProperties;
     const configValue = merge(config1[prop], config2[prop], prop);
     (utils$1.isUndefined(configValue) && merge !== mergeDirectKeys) || (config[prop] = configValue);
@@ -67637,7 +67831,7 @@ function mergeConfig(config1, config2) {
 const resolveConfig = (config) => {
   const newConfig = mergeConfig({}, config);
 
-  let {data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth} = newConfig;
+  let { data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
 
   newConfig.headers = headers = AxiosHeaders$1.from(headers);
 
@@ -67650,17 +67844,21 @@ const resolveConfig = (config) => {
     );
   }
 
-  let contentType;
-
   if (utils$1.isFormData(data)) {
     if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv) {
-      headers.setContentType(undefined); // Let the browser set it
-    } else if ((contentType = headers.getContentType()) !== false) {
-      // fix semicolon duplication issue for ReactNative FormData implementation
-      const [type, ...tokens] = contentType ? contentType.split(';').map(token => token.trim()).filter(Boolean) : [];
-      headers.setContentType([type || 'multipart/form-data', ...tokens].join('; '));
+      headers.setContentType(undefined); // browser handles it
+    } else if (utils$1.isFunction(data.getHeaders)) {
+      // Node.js FormData (like form-data package)
+      const formHeaders = data.getHeaders();
+      // Only set safe headers to avoid overwriting security headers
+      const allowedHeaders = ['content-type', 'content-length'];
+      Object.entries(formHeaders).forEach(([key, val]) => {
+        if (allowedHeaders.includes(key.toLowerCase())) {
+          headers.set(key, val);
+        }
+      });
     }
-  }
+  }  
 
   // Add xsrf header
   // This is only done if running in a standard browser environment.
@@ -67777,15 +67975,18 @@ const xhrAdapter = isXHRAdapterSupported && function (config) {
     };
 
     // Handle low level network errors
-    request.onerror = function handleError() {
-      // Real errors are hidden from us by the browser
-      // onerror should only fire if it's a network error
-      reject(new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request));
-
-      // Clean up request
-      request = null;
+  request.onerror = function handleError(event) {
+       // Browsers deliver a ProgressEvent in XHR onerror
+       // (message may be empty; when present, surface it)
+       // See https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/error_event
+       const msg = event && event.message ? event.message : 'Network Error';
+       const err = new AxiosError(msg, AxiosError.ERR_NETWORK, config, request);
+       // attach the underlying event for consumers who want details
+       err.event = event || null;
+       reject(err);
+       request = null;
     };
-
+    
     // Handle timeout
     request.ontimeout = function handleTimeout() {
       let timeoutErrorMessage = _config.timeout ? 'timeout of ' + _config.timeout + 'ms exceeded' : 'timeout exceeded';
@@ -68001,14 +68202,18 @@ const trackStream = (stream, chunkSize, onProgress, onFinish) => {
   })
 };
 
-const isFetchSupported = typeof fetch === 'function' && typeof Request === 'function' && typeof Response === 'function';
-const isReadableStreamSupported = isFetchSupported && typeof ReadableStream === 'function';
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
 
-// used only inside the fetch adapter
-const encodeText = isFetchSupported && (typeof TextEncoder === 'function' ?
-    ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) :
-    async (str) => new Uint8Array(await new Response(str).arrayBuffer())
-);
+const {isFunction} = utils$1;
+
+const globalFetchAPI = (({fetch, Request, Response}) => ({
+    fetch, Request, Response
+  }))(utils$1.global);
+
+const {
+  ReadableStream: ReadableStream$1, TextEncoder: TextEncoder$1
+} = utils$1.global;
+
 
 const test = (fn, ...args) => {
   try {
@@ -68018,211 +68223,266 @@ const test = (fn, ...args) => {
   }
 };
 
-const supportsRequestStream = isReadableStreamSupported && test(() => {
-  let duplexAccessed = false;
+const factory = (env) => {
+  const {fetch, Request, Response} = Object.assign({}, globalFetchAPI, env);
+  const isFetchSupported = isFunction(fetch);
+  const isRequestSupported = isFunction(Request);
+  const isResponseSupported = isFunction(Response);
 
-  const hasContentType = new Request(platform.origin, {
-    body: new ReadableStream(),
-    method: 'POST',
-    get duplex() {
-      duplexAccessed = true;
-      return 'half';
-    },
-  }).headers.has('Content-Type');
+  if (!isFetchSupported) {
+    return false;
+  }
 
-  return duplexAccessed && !hasContentType;
-});
+  const isReadableStreamSupported = isFetchSupported && isFunction(ReadableStream$1);
 
-const DEFAULT_CHUNK_SIZE = 64 * 1024;
+  const encodeText = isFetchSupported && (typeof TextEncoder$1 === 'function' ?
+      ((encoder) => (str) => encoder.encode(str))(new TextEncoder$1()) :
+      async (str) => new Uint8Array(await new Request(str).arrayBuffer())
+  );
 
-const supportsResponseStream = isReadableStreamSupported &&
-  test(() => utils$1.isReadableStream(new Response('').body));
+  const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
+    let duplexAccessed = false;
 
+    const hasContentType = new Request(platform.origin, {
+      body: new ReadableStream$1(),
+      method: 'POST',
+      get duplex() {
+        duplexAccessed = true;
+        return 'half';
+      },
+    }).headers.has('Content-Type');
 
-const resolvers = {
-  stream: supportsResponseStream && ((res) => res.body)
-};
+    return duplexAccessed && !hasContentType;
+  });
 
-isFetchSupported && (((res) => {
-  ['text', 'arrayBuffer', 'blob', 'formData', 'stream'].forEach(type => {
-    !resolvers[type] && (resolvers[type] = utils$1.isFunction(res[type]) ? (res) => res[type]() :
-      (_, config) => {
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported &&
+    test(() => utils$1.isReadableStream(new Response('').body));
+
+  const resolvers = {
+    stream: supportsResponseStream && ((res) => res.body)
+  };
+
+  isFetchSupported && ((() => {
+    ['text', 'arrayBuffer', 'blob', 'formData', 'stream'].forEach(type => {
+      !resolvers[type] && (resolvers[type] = (res, config) => {
+        let method = res && res[type];
+
+        if (method) {
+          return method.call(res);
+        }
+
         throw new AxiosError(`Response type '${type}' is not supported`, AxiosError.ERR_NOT_SUPPORT, config);
       });
-  });
-})(new Response));
-
-const getBodyLength = async (body) => {
-  if (body == null) {
-    return 0;
-  }
-
-  if(utils$1.isBlob(body)) {
-    return body.size;
-  }
-
-  if(utils$1.isSpecCompliantForm(body)) {
-    const _request = new Request(platform.origin, {
-      method: 'POST',
-      body,
     });
-    return (await _request.arrayBuffer()).byteLength;
-  }
+  })());
 
-  if(utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
-    return body.byteLength;
-  }
+  const getBodyLength = async (body) => {
+    if (body == null) {
+      return 0;
+    }
 
-  if(utils$1.isURLSearchParams(body)) {
-    body = body + '';
-  }
+    if (utils$1.isBlob(body)) {
+      return body.size;
+    }
 
-  if(utils$1.isString(body)) {
-    return (await encodeText(body)).byteLength;
-  }
-};
-
-const resolveBodyLength = async (headers, body) => {
-  const length = utils$1.toFiniteNumber(headers.getContentLength());
-
-  return length == null ? getBodyLength(body) : length;
-};
-
-const fetchAdapter = isFetchSupported && (async (config) => {
-  let {
-    url,
-    method,
-    data,
-    signal,
-    cancelToken,
-    timeout,
-    onDownloadProgress,
-    onUploadProgress,
-    responseType,
-    headers,
-    withCredentials = 'same-origin',
-    fetchOptions
-  } = resolveConfig(config);
-
-  responseType = responseType ? (responseType + '').toLowerCase() : 'text';
-
-  let composedSignal = composeSignals$1([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
-
-  let request;
-
-  const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
-      composedSignal.unsubscribe();
-  });
-
-  let requestContentLength;
-
-  try {
-    if (
-      onUploadProgress && supportsRequestStream && method !== 'get' && method !== 'head' &&
-      (requestContentLength = await resolveBodyLength(headers, data)) !== 0
-    ) {
-      let _request = new Request(url, {
+    if (utils$1.isSpecCompliantForm(body)) {
+      const _request = new Request(platform.origin, {
         method: 'POST',
-        body: data,
-        duplex: "half"
+        body,
       });
-
-      let contentTypeHeader;
-
-      if (utils$1.isFormData(data) && (contentTypeHeader = _request.headers.get('content-type'))) {
-        headers.setContentType(contentTypeHeader);
-      }
-
-      if (_request.body) {
-        const [onProgress, flush] = progressEventDecorator(
-          requestContentLength,
-          progressEventReducer(asyncDecorator(onUploadProgress))
-        );
-
-        data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
-      }
+      return (await _request.arrayBuffer()).byteLength;
     }
 
-    if (!utils$1.isString(withCredentials)) {
-      withCredentials = withCredentials ? 'include' : 'omit';
+    if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
+      return body.byteLength;
     }
 
-    // Cloudflare Workers throws when credentials are defined
-    // see https://github.com/cloudflare/workerd/issues/902
-    const isCredentialsSupported = "credentials" in Request.prototype;
-    request = new Request(url, {
-      ...fetchOptions,
-      signal: composedSignal,
-      method: method.toUpperCase(),
-      headers: headers.normalize().toJSON(),
-      body: data,
-      duplex: "half",
-      credentials: isCredentialsSupported ? withCredentials : undefined
+    if (utils$1.isURLSearchParams(body)) {
+      body = body + '';
+    }
+
+    if (utils$1.isString(body)) {
+      return (await encodeText(body)).byteLength;
+    }
+  };
+
+  const resolveBodyLength = async (headers, body) => {
+    const length = utils$1.toFiniteNumber(headers.getContentLength());
+
+    return length == null ? getBodyLength(body) : length;
+  };
+
+  return async (config) => {
+    let {
+      url,
+      method,
+      data,
+      signal,
+      cancelToken,
+      timeout,
+      onDownloadProgress,
+      onUploadProgress,
+      responseType,
+      headers,
+      withCredentials = 'same-origin',
+      fetchOptions
+    } = resolveConfig(config);
+
+    responseType = responseType ? (responseType + '').toLowerCase() : 'text';
+
+    let composedSignal = composeSignals$1([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
+
+    let request = null;
+
+    const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
+      composedSignal.unsubscribe();
     });
 
-    let response = await fetch(request);
+    let requestContentLength;
 
-    const isStreamResponse = supportsResponseStream && (responseType === 'stream' || responseType === 'response');
+    try {
+      if (
+        onUploadProgress && supportsRequestStream && method !== 'get' && method !== 'head' &&
+        (requestContentLength = await resolveBodyLength(headers, data)) !== 0
+      ) {
+        let _request = new Request(url, {
+          method: 'POST',
+          body: data,
+          duplex: "half"
+        });
 
-    if (supportsResponseStream && (onDownloadProgress || (isStreamResponse && unsubscribe))) {
-      const options = {};
+        let contentTypeHeader;
 
-      ['status', 'statusText', 'headers'].forEach(prop => {
-        options[prop] = response[prop];
-      });
-
-      const responseContentLength = utils$1.toFiniteNumber(response.headers.get('content-length'));
-
-      const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
-        responseContentLength,
-        progressEventReducer(asyncDecorator(onDownloadProgress), true)
-      ) || [];
-
-      response = new Response(
-        trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
-          flush && flush();
-          unsubscribe && unsubscribe();
-        }),
-        options
-      );
-    }
-
-    responseType = responseType || 'text';
-
-    let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || 'text'](response, config);
-
-    !isStreamResponse && unsubscribe && unsubscribe();
-
-    return await new Promise((resolve, reject) => {
-      settle(resolve, reject, {
-        data: responseData,
-        headers: AxiosHeaders$1.from(response.headers),
-        status: response.status,
-        statusText: response.statusText,
-        config,
-        request
-      });
-    })
-  } catch (err) {
-    unsubscribe && unsubscribe();
-
-    if (err && err.name === 'TypeError' && /fetch/i.test(err.message)) {
-      throw Object.assign(
-        new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request),
-        {
-          cause: err.cause || err
+        if (utils$1.isFormData(data) && (contentTypeHeader = _request.headers.get('content-type'))) {
+          headers.setContentType(contentTypeHeader);
         }
-      )
-    }
 
-    throw AxiosError.from(err, err && err.code, config, request);
+        if (_request.body) {
+          const [onProgress, flush] = progressEventDecorator(
+            requestContentLength,
+            progressEventReducer(asyncDecorator(onUploadProgress))
+          );
+
+          data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
+        }
+      }
+
+      if (!utils$1.isString(withCredentials)) {
+        withCredentials = withCredentials ? 'include' : 'omit';
+      }
+
+      // Cloudflare Workers throws when credentials are defined
+      // see https://github.com/cloudflare/workerd/issues/902
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request.prototype;
+
+      const resolvedOptions = {
+        ...fetchOptions,
+        signal: composedSignal,
+        method: method.toUpperCase(),
+        headers: headers.normalize().toJSON(),
+        body: data,
+        duplex: "half",
+        credentials: isCredentialsSupported ? withCredentials : undefined
+      };
+
+      request = isRequestSupported && new Request(url, resolvedOptions);
+
+      let response = await (isRequestSupported ? fetch(request, fetchOptions) : fetch(url, resolvedOptions));
+
+      const isStreamResponse = supportsResponseStream && (responseType === 'stream' || responseType === 'response');
+
+      if (supportsResponseStream && (onDownloadProgress || (isStreamResponse && unsubscribe))) {
+        const options = {};
+
+        ['status', 'statusText', 'headers'].forEach(prop => {
+          options[prop] = response[prop];
+        });
+
+        const responseContentLength = utils$1.toFiniteNumber(response.headers.get('content-length'));
+
+        const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
+          responseContentLength,
+          progressEventReducer(asyncDecorator(onDownloadProgress), true)
+        ) || [];
+
+        response = new Response(
+          trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
+            flush && flush();
+            unsubscribe && unsubscribe();
+          }),
+          options
+        );
+      }
+
+      responseType = responseType || 'text';
+
+      let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || 'text'](response, config);
+
+      !isStreamResponse && unsubscribe && unsubscribe();
+
+      return await new Promise((resolve, reject) => {
+        settle(resolve, reject, {
+          data: responseData,
+          headers: AxiosHeaders$1.from(response.headers),
+          status: response.status,
+          statusText: response.statusText,
+          config,
+          request
+        });
+      })
+    } catch (err) {
+      unsubscribe && unsubscribe();
+
+      if (err && err.name === 'TypeError' && /Load failed|fetch/i.test(err.message)) {
+        throw Object.assign(
+          new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request),
+          {
+            cause: err.cause || err
+          }
+        )
+      }
+
+      throw AxiosError.from(err, err && err.code, config, request);
+    }
   }
-});
+};
+
+const seedCache = new Map();
+
+const getFetch = (config) => {
+  let env = utils$1.merge.call({
+    skipUndefined: true
+  }, globalFetchAPI, config ? config.env : null);
+
+  const {fetch, Request, Response} = env;
+
+  const seeds = [
+    Request, Response, fetch
+  ];
+
+  let len = seeds.length, i = len,
+    seed, target, map = seedCache;
+
+  while (i--) {
+    seed = seeds[i];
+    target = map.get(seed);
+
+    target === undefined && map.set(seed, target = (i ? new Map() : factory(env)));
+
+    map = target;
+  }
+
+  return target;
+};
+
+getFetch();
 
 const knownAdapters = {
   http: httpAdapter,
   xhr: xhrAdapter,
-  fetch: fetchAdapter
+  fetch: {
+    get: getFetch,
+  }
 };
 
 utils$1.forEach(knownAdapters, (fn, value) => {
@@ -68241,7 +68501,7 @@ const renderReason = (reason) => `- ${reason}`;
 const isResolvedHandle = (adapter) => utils$1.isFunction(adapter) || adapter === null || adapter === false;
 
 const adapters = {
-  getAdapter: (adapters) => {
+  getAdapter: (adapters, config) => {
     adapters = utils$1.isArray(adapters) ? adapters : [adapters];
 
     const {length} = adapters;
@@ -68264,7 +68524,7 @@ const adapters = {
         }
       }
 
-      if (adapter) {
+      if (adapter && (utils$1.isFunction(adapter) || (adapter = adapter.get(config)))) {
         break;
       }
 
@@ -68332,7 +68592,7 @@ function dispatchRequest(config) {
     config.headers.setContentType('application/x-www-form-urlencoded', false);
   }
 
-  const adapter = adapters.getAdapter(config.adapter || defaults$1.adapter);
+  const adapter = adapters.getAdapter(config.adapter || defaults$1.adapter, config);
 
   return adapter(config).then(function onAdapterResolution(response) {
     throwIfCancellationRequested(config);
@@ -68472,7 +68732,7 @@ const validators = validator.validators;
  */
 class Axios {
   constructor(instanceConfig) {
-    this.defaults = instanceConfig;
+    this.defaults = instanceConfig || {};
     this.interceptors = {
       request: new InterceptorManager$1(),
       response: new InterceptorManager$1()
@@ -68603,8 +68863,8 @@ class Axios {
 
     if (!synchronousRequestInterceptors) {
       const chain = [dispatchRequest.bind(this), undefined];
-      chain.unshift.apply(chain, requestInterceptorChain);
-      chain.push.apply(chain, responseInterceptorChain);
+      chain.unshift(...requestInterceptorChain);
+      chain.push(...responseInterceptorChain);
       len = chain.length;
 
       promise = Promise.resolve(config);
@@ -69010,7 +69270,7 @@ module.exports = axios;
 /***/ ((module) => {
 
 "use strict";
-module.exports = {"rE":"2.6.0"};
+module.exports = {"rE":"2.8.0"};
 
 /***/ }),
 
